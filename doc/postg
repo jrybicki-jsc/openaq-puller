@@ -1,0 +1,2 @@
+run -dP -e POSTGRES_PASSWORD=mysecretpassword --name mypos postgres
+docker run -it --rm --link mypos:postgres postgres psql -h postgres -U postgres
