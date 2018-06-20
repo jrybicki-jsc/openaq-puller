@@ -1,2 +1,5 @@
 run -dP -e POSTGRES_PASSWORD=mysecretpassword --name mypos postgres
 docker run -it --rm --link mypos:postgres postgres psql -h postgres -U postgres
+
+
+PYTHONPATH='.' luigi --local-scheduler --module workflows.getter GetObjects --prefix test-realtime/ --end-date 2017-09-28T182526

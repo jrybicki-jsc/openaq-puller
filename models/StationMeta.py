@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine, select
 
 from models import metadata, stationmeta
@@ -21,6 +22,17 @@ class MyEngine(object):
         return self.dbname
 
 
+def get_engine():
+    # host empty is memory storage
+    host = os.getenv('DB_HOST', '')
+    dbname = os.getenv('DB_DATABASE', 'openaq')
+    user = os.getenv('DB_USER', 'postgres')
+    password = os.getenv('DB_PASS', 'mysecretpassword')
+    engine = MyEngine(host=host, dbname=dbname, user=user, password=password)
+
+    return engine
+
+
 class StationMetaCoreDAO(object):
     def __init__(self, engine):
         self.engine = engine.get_engine()
@@ -36,7 +48,7 @@ class StationMetaCoreDAO(object):
 
         r = self.get_for_name(station_name)
         if r is not None:
-            return r
+            return r[0]
 
         ins = stationmeta.insert().values(
             station_id=station_id,
@@ -53,7 +65,7 @@ class StationMetaCoreDAO(object):
         return last_id
 
     def get_for_name(self, station_name):
-        s = select([stationmeta]).where(stationmeta.c.station_name==station_name)
+        s = select([stationmeta]).where(station_name == stationmeta.c.station_name)
 
         res = self.engine.execute(s)
         return res.first()

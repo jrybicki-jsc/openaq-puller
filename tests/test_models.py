@@ -25,8 +25,8 @@ def __get_engine():
     # host empty is memory storage
     host = os.getenv('DB_HOST', '')
     dbname = os.getenv('DB_TEST_DATABASE', 'openaq')
-    user = os.getenv('DB_USER', 'jj')
-    password = os.getenv('DB_PASS', 's3cret')
+    user = os.getenv('DB_USER', 'postgres')
+    password = os.getenv('DB_PASS', 'mysecretpassword')
     engine = MyEngine(host=host, dbname=dbname, user=user, password=password)
 
     return engine
@@ -55,8 +55,13 @@ def test_store_unique():
     dao.create_table()
 
     asj = json.loads(jseg)
-    dao.store_from_json(asj)
-    dao.store_from_json(asj)
+    id1 = dao.store_from_json(asj)
+    assert id1 is not None
+
+    id2 = dao.store_from_json(asj)
+    print('{} == {}'.format(id1, id2))
+    assert id2 is not None
+    assert id2 == id1
 
     result = dao.get_all()
     assert len(result) == 1

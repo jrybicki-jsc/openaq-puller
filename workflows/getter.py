@@ -1,6 +1,8 @@
 import luigi
 from datetime import datetime
-from models.StationMeta import StationMetaCoreDAO
+
+from models.Measurement import MeasurementDAO
+from models.StationMeta import StationMetaCoreDAO, get_engine
 
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, filter_objects, serialize_object, read_object_list, \
     get_jsons_from_object, split_record
@@ -57,24 +59,31 @@ class GetObjects(luigi.Task):
 
         filtered = list(filter_objects(all_objects=wl, start_date=self.start_date, end_date=self.end_date))
 
-        station_dao = StationMetaCoreDAO(host='', dbname='mm', user='jj', password='s3cret')
+        engine = get_engine()
+        station_dao = StationMetaCoreDAO(engine=engine)
+        mes_dao = MeasurementDAO(engine=engine)
         station_dao.create_table()
 
         records = 0
-        invalid_records = 0
 
         for obj in filtered:
             for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=obj['Name']):
                 station, measurement, ext = split_record(record)
 
-                station_dao.store_from_json(station)
+                stat_id = station_dao.store_from_json(station)
+
+                mes_dao.store(station_id=stat_id, parameter=measurement['parameter'],
+                              value=measurement['value'], unit=measurement['unit'],
+                              averagingPeriod=measurement['averagingPeriod'],
+                              date=measurement['date']['utc'])
+
                 records += 1
 
         with self.output().open('w') as f:
-            f.write(self.run_date.strftime('%x'))
+            f.write(self.run_date.strftime('%x\n'))
             f.write('%d stations stored in db\n' % len(station_dao.get_all()))
+            f.write('%d measurements stored in db\n' % len(mes_dao.get_all()))
             f.write('%d valid records processed\n' % records)
-            f.write('%d invalid records found\n' % invalid_records)
-
+          
     def output(self):
         return luigi.LocalTarget(self.run_date.strftime('data/run-%Y-%m-%d-%H-%M.dat'))

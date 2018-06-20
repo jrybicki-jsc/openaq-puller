@@ -19,7 +19,7 @@ class MeasurementDAO(object):
             parameter=parameter,
             value=value,
             unit=unit,
-            averagingPeriod=averagingPeriod,
+            averagingPeriod="",
             date=parser.parse(date))
 
         res = self.engine.execute(ins)

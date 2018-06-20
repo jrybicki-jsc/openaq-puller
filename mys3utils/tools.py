@@ -120,10 +120,14 @@ def split_record(record):
     if 'coordinates' not in record:
         record['coordinates'] = {'latitude': 0.0, 'longitude': 0.0}
 
+    if 'averagingPeriod' not in record:
+        record['averagingPeriod'] = ""
+
     mes_keys = ['parameter', 'value', 'unit', 'averagingPeriod', 'date', 'sourceName']
     stat_keys = ['location', 'city', 'coordinates', 'country', 'sourceName']
 
     measurement = {k: v for k, v in record.items() if k in mes_keys}
+
     station = {k: v for k, v in record.items() if k in stat_keys}
     ext = {k: v for k, v in record.items() if k not in (mes_keys + stat_keys)}
 
