@@ -84,6 +84,6 @@ class GetObjects(luigi.Task):
             f.write('%d stations stored in db\n' % len(station_dao.get_all()))
             f.write('%d measurements stored in db\n' % len(mes_dao.get_all()))
             f.write('%d valid records processed\n' % records)
-          
+
     def output(self):
         return luigi.LocalTarget(self.run_date.strftime('data/run-%Y-%m-%d-%H-%M.dat'))
