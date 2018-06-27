@@ -132,3 +132,22 @@ def split_record(record):
     ext = {k: v for k, v in record.items() if k not in (mes_keys + stat_keys)}
 
     return station, measurement, ext
+
+
+def get_objects(prefix):
+    objects, _ = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
+    return objects
+
+
+def process_file(object_name, station_dao, mes_dao):
+    records = 0
+    for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=object_name):
+        station, measurement, ext = split_record(record)
+        stat_id = station_dao.store_from_json(station)
+        mes_dao.store(station_id=stat_id, parameter=measurement['parameter'],
+                      value=measurement['value'], unit=measurement['unit'],
+                      averagingPeriod=measurement['averagingPeriod'],
+                      date=measurement['date']['utc'])
+        records += 1
+
+    return records

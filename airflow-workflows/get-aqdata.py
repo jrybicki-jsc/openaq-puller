@@ -3,6 +3,7 @@ from airflow.operators.python_operator import PythonOperator
 
 from datetime import timedelta
 import os
+import logging
 
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list
 
@@ -12,24 +13,29 @@ def __generate_fname(suffix, **kwargs):
     execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
 
     fname = os.path.join(base_dir, execution_date)
-    os.makedirs(fname)
+
+    os.makedirs(fname, exist_ok=True)
     fname = os.path.join(fname, suffix)
     return fname
 
 
 def get_prefixes(**kwargs):
+
     prefix = kwargs['prefix']
-    fname = __generate_fname('prefix.dat')
+    fname = __generate_fname('prefix.dat', **kwargs)
 
     _, prefixes = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
 
     with open(fname, 'w+') as f:
         f.write("\n".join(prefixes))
 
+    kwargs['ti'].xcom_push(key='prefixes_location', value=fname)
+
 
 def generate_objects(**kwargs):
-    fname = __generate_fname('prefix.dat')
-    output = __generate_fname('objects.csv')
+    fname = kwargs['ti'].xcom_pull(key='prefixes_location', task_ids='get_prefixes')
+    output = __generate_fname('objects.csv', **kwargs)
+    logging.info('The task will read from %s and write to: %s' % (fname, output))
 
     with open(fname, 'r') as f:
         with open(output, 'w+') as out:
@@ -38,14 +44,17 @@ def generate_objects(**kwargs):
                 for obj in objects:
                     out.write(serialize_object(obj))
 
+    kwargs['ti'].xcom_push(key='object_location', value=output)
+
 
 def add_to_database(**kwargs):
-    objs = __generate_fname('objects.csv')
+    objs = kwargs['ti'].xcom_pull(key='object_location', task_ids='generate_object_list')
+    logging.info('Processing object list from %s' % objs)
     with open(objs, 'r') as f:
         wl = read_object_list(f)
 
     for record in wl:
-        print('Requesting %s ' % record)
+        logging.info('Requesting %s ' % record)
 
 
 default_args = {
