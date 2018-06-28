@@ -5,7 +5,10 @@ from datetime import timedelta
 import os
 import logging
 
-from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list
+from models.Measurement import MeasurementDAO
+from models.StationMeta import get_engine, StationMetaCoreDAO
+from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, split_record, \
+    get_jsons_from_object, filter_objects
 
 
 def __generate_fname(suffix, **kwargs):
@@ -20,7 +23,6 @@ def __generate_fname(suffix, **kwargs):
 
 
 def get_prefixes(**kwargs):
-
     prefix = kwargs['prefix']
     fname = __generate_fname('prefix.dat', **kwargs)
 
@@ -53,8 +55,34 @@ def add_to_database(**kwargs):
     with open(objs, 'r') as f:
         wl = read_object_list(f)
 
-    for record in wl:
-        logging.info('Requesting %s ' % record)
+    #execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
+    #previous_run = kwargs['prev_execution_date'].strftime('%Y-%m-%dT%H-%M')
+    #filtered = list(filter_objects(all_objects=wl, start_date=previous_run, end_date=execution_date))
+    filtered = list(wl)
+
+    engine = get_engine()
+    station_dao = StationMetaCoreDAO(engine=engine)
+    mes_dao = MeasurementDAO(engine=engine)
+    station_dao.create_table()
+
+    records = 0
+
+    for obj in filtered:
+        for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=obj['Name']):
+            station, measurement, ext = split_record(record)
+
+            stat_id = station_dao.store_from_json(station)
+
+            mes_dao.store(station_id=stat_id, parameter=measurement['parameter'],
+                          value=measurement['value'], unit=measurement['unit'],
+                          averagingPeriod=measurement['averagingPeriod'],
+                          date=measurement['date']['utc'])
+
+            records += 1
+
+    logging.info('%d stations stored in db\n', len(station_dao.get_all()))
+    logging.info('%d measurements stored in db\n', len(mes_dao.get_all()))
+    logging.info('%d valid records processed\n', records)
 
 
 default_args = {
