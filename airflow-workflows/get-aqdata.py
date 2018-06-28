@@ -9,22 +9,13 @@ from models.Measurement import MeasurementDAO
 from models.StationMeta import get_engine, StationMetaCoreDAO
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, split_record, \
     get_jsons_from_object, filter_objects
+from utils import generate_fname
 
-
-def __generate_fname(suffix, **kwargs):
-    base_dir = kwargs['base_dir']
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-
-    fname = os.path.join(base_dir, execution_date)
-
-    os.makedirs(fname, exist_ok=True)
-    fname = os.path.join(fname, suffix)
-    return fname
 
 
 def get_prefixes(**kwargs):
     prefix = kwargs['prefix']
-    fname = __generate_fname('prefix.dat', **kwargs)
+    fname = generate_fname('prefix.dat', **kwargs)
 
     _, prefixes = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
 
@@ -36,7 +27,7 @@ def get_prefixes(**kwargs):
 
 def generate_objects(**kwargs):
     fname = kwargs['ti'].xcom_pull(key='prefixes_location', task_ids='get_prefixes')
-    output = __generate_fname('objects.csv', **kwargs)
+    output = generate_fname('objects.csv', **kwargs)
     logging.info('The task will read from %s and write to: %s' % (fname, output))
 
     with open(fname, 'r') as f:
