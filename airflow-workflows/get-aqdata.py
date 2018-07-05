@@ -9,9 +9,17 @@ from models.Measurement import MeasurementDAO
 from models.StationMeta import get_engine, StationMetaCoreDAO
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, split_record, \
     get_jsons_from_object, filter_objects
-from utils import generate_fname
 
 
+def generate_fname(suffix, **kwargs):
+    base_dir = kwargs['base_dir']
+    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
+
+    fname = os.path.join(base_dir, execution_date)
+
+    os.makedirs(fname, exist_ok=True)
+    fname = os.path.join(fname, suffix)
+    return fname
 
 def get_prefixes(**kwargs):
     prefix = kwargs['prefix']
@@ -88,7 +96,7 @@ op_kwargs = {
     'prefix': 'test-realtime/',
 }
 
-dag = DAG('get-aqdata', default_args=default_args, schedule_interval=timedelta(1))
+dag = DAG('get-aqdata', default_args=default_args, schedule_interval=timedelta(days=1))
 
 get_prefixes_task = PythonOperator(task_id='get_prefixes', python_callable=get_prefixes,
                                    op_kwargs=op_kwargs, dag=dag)
