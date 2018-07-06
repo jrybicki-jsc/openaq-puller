@@ -1,5 +1,5 @@
 import logging
-import os
+
 from datetime import timedelta
 import concurrent.futures
 
@@ -9,23 +9,15 @@ from airflow.operators.python_operator import PythonOperator
 from models.Measurement import MeasurementDAO
 from models.StationMeta import get_engine, StationMetaCoreDAO
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, get_objects, \
-    get_jsons_from_object, split_record, filter_objects
+    filter_objects
+
+from utils import *
 
 
-def generate_fname(suffix, **kwargs):
-    base_dir = kwargs['base_dir']
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-
-    fname = os.path.join(base_dir, execution_date)
-
-    os.makedirs(fname, exist_ok=True)
-    fname = os.path.join(fname, suffix)
-    return fname
-
-
-def get_prefixes(**kwargs):
+def generate_prefix_list(**kwargs):
     prefix = kwargs['prefix']
     fname = generate_fname('prefix.dat', **kwargs)
+    logging.info('Storing prefix list in %s', fname)
 
     _, prefixes = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
 
@@ -36,16 +28,12 @@ def get_prefixes(**kwargs):
 
 
 def generate_object_list_parallel(**kwargs):
-    fname = kwargs['ti'].xcom_pull(key='prefixes_location', task_ids='get_prefixes')
+    fname = kwargs['ti'].xcom_pull(key='prefixes_location', task_ids='generate_prefix_list')
     output = generate_fname('objects.csv', **kwargs)
     logging.info('The task will read from %s and write to: %s' % (fname, output))
 
     with open(fname, 'r') as f:
-        ins = map(lambda a: a.strip(), f.readlines())
-
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-    previous_run = kwargs['prev_execution_date'].strftime('%Y-%m-%dT%H-%M')
-    prefix_list = list(filter_objects(all_objects=ins, start_date=previous_run, end_date=execution_date))
+        prefix_list = list(map(lambda a: a.strip(), f.readlines()))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
         future_to_url = {executor.submit(get_objects, prefix): prefix for prefix in prefix_list}
@@ -63,38 +51,23 @@ def generate_object_list_parallel(**kwargs):
     kwargs['ti'].xcom_push(key='object_location', value=output)
 
 
-def add_to_db(station_dao, mes_dao, station, measurement):
-    stat_id = station_dao.store_from_json(station)
-    mes_dao.store(station_id=stat_id,
-                  parameter=measurement['parameter'],
-                  value=measurement['value'],
-                  unit=measurement['unit'],
-                  averagingPeriod=measurement['averagingPeriod'],
-                  date=measurement['date']['utc'])
-
-
-def local_process_file(object_name):
-    ret = []
-    for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=object_name):
-        station, measurement, ext = split_record(record)
-
-        ret.append([station, measurement])
-
-    return ret
-
-
-def add_to_database(**kwargs):
+def store_objects_in_db(**kwargs):
     objs = kwargs['ti'].xcom_pull(key='object_location', task_ids='generate_object_list')
     logging.info('Processing object list from %s', objs)
     with open(objs, 'r') as f:
         wl = read_object_list(f)
 
+    execution_date = kwargs['execution_date']
+    previous_run = kwargs['prev_execution_date']
+    logging.info('Start: %s End: %s', previous_run, execution_date)
+
+    filtered = list(filter_objects(all_objects=wl, start_date=previous_run, end_date=execution_date))
+    logging.info('Number of objects from [%s, %s]: %d', previous_run, execution_date, len(filtered))
+
     engine = get_engine()
     station_dao = StationMetaCoreDAO(engine=engine)
     mes_dao = MeasurementDAO(engine=engine)
     station_dao.create_table()
-
-    filtered = list(wl)
 
     records = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
@@ -130,8 +103,8 @@ op_kwargs = {
 
 dag = DAG('get-aqdata-parallel', default_args=default_args, schedule_interval=timedelta(1))
 
-get_prefixes_task = PythonOperator(task_id='get_prefixes',
-                                   python_callable=get_prefixes,
+get_prefixes_task = PythonOperator(task_id='generate_prefix_list',
+                                   python_callable=generate_prefix_list,
                                    op_kwargs=op_kwargs,
                                    dag=dag)
 
@@ -140,8 +113,8 @@ generate_object_list_task = PythonOperator(task_id='generate_object_list',
                                            op_kwargs=op_kwargs,
                                            dag=dag)
 
-add_to_database_task = PythonOperator(task_id='add_to_db',
-                                      python_callable=add_to_database,
+add_to_database_task = PythonOperator(task_id='store_objects_in_db',
+                                      python_callable=store_objects_in_db,
                                       op_kwargs=op_kwargs,
                                       dag=dag)
 
