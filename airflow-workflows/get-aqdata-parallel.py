@@ -1,6 +1,6 @@
 import logging
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 import concurrent.futures
 
 from airflow import DAG, utils
@@ -92,8 +92,10 @@ def store_objects_in_db(**kwargs):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': utils.dates.days_ago(2),
-    'provide_context': True
+    'start_date': datetime(2017, 9, 27),
+    'end_date': datetime(2017, 9, 29),
+    'provide_context': True,
+    'catchup': True
 }
 
 op_kwargs = {
