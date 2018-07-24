@@ -1,6 +1,8 @@
 import codecs
 import csv
 import json
+import re
+
 import pytz
 from dateutil import parser
 
@@ -69,6 +71,11 @@ def filter_objects(all_objects, start_date, end_date):
         end_date = utc.localize(end_date)
 
     return (x for x in all_objects if start_date <= x['LastModified'] <= end_date)
+
+
+def filter_prefixes(prefixes, start_date, end_date):
+    patt = re.compile(r'.*/(\d{4}-\d{2}-\d{2})/')
+    return (x for x in prefixes if start_date <= parser.parse(patt.search(x).group(1)) <= end_date)
 
 
 def serialize_object(l):

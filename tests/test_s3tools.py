@@ -1,10 +1,8 @@
-import json
-
-from mys3utils.tools import filter_objects, get_object_list, read_object_list, get_jsons_from_object, split_record
+from mys3utils.tools import filter_objects, get_object_list, read_object_list, get_jsons_from_object, split_record, \
+    filter_prefixes
 from datetime import datetime, timedelta, timezone
 import random
 from unittest.mock import MagicMock, Mock
-import csv
 
 
 def get_fake_list(start_date, count):
@@ -56,6 +54,23 @@ def test_filter_2():
     filtered = filter_objects(all_objects=ll, start_date=datetime(2016, 8, 7, tzinfo=timezone.utc),
                               end_date=datetime(2017, 9, 29))
     print(list(filtered))
+
+
+def test_filter_prefixes():
+    ll = ['realtime/2014-03-02/',
+          'realtime/2014-03-03/',
+          'realtime/2014-03-04/',
+          'realtime/2014-03-05/',
+          'realtime/2014-03-06/',
+          'realtime/2014-03-07/',
+          'realtime/2014-03-08/',
+          'realtime/2014-03-09/',
+          'realtime/2014-03-10/',
+          'realtime/2014-03-11/',
+          'realtime/2014-03-12/']
+
+    filtered = filter_prefixes(prefixes=ll, start_date=datetime(2014, 3, 5), end_date=datetime(2014, 3, 8))
+    assert len(list(filtered)) == 4
 
 
 def test_get_objects():
@@ -118,4 +133,3 @@ def test_massive_split():
         assert 'sourceName' in measurement
 
     f.close()
-
