@@ -9,22 +9,27 @@ from airflow.operators.python_operator import PythonOperator
 from models.Measurement import MeasurementDAO
 from models.StationMeta import get_engine, StationMetaCoreDAO
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, get_objects, \
-    filter_objects
+    filter_objects, filter_prefixes
 
 from utils import *
 
 
-def generate_prefix_list(**kwargs):
-    prefix = kwargs['prefix']
+def store_prefix_list(prefixes, **kwargs):
     fname = generate_fname('prefix.dat', **kwargs)
     logging.info('Storing prefix list in %s', fname)
-
-    _, prefixes = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
-
     with open(fname, 'w+') as f:
         f.write("\n".join(prefixes))
 
-    kwargs['ti'].xcom_push(key='prefixes_location', value=fname)
+    return fname
+
+
+def generate_prefix_list(**kwargs):
+    prefix = kwargs['prefix']
+
+    _, prefixes = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
+    location = store_prefix_list(prefixes, **kwargs)
+
+    kwargs['ti'].xcom_push(key='prefixes_location', value=location)
 
 
 def generate_object_list_parallel(**kwargs):
@@ -33,13 +38,17 @@ def generate_object_list_parallel(**kwargs):
     logging.info('The task will read from %s and write to: %s' % (fname, output))
 
     with open(fname, 'r') as f:
-        prefix_list = list(map(lambda a: a.strip(), f.readlines()))
+        # list not required
+        prefix_list = map(lambda a: a.strip(), f.readlines())
+
+    prefix_list = list(filter_prefixes(prefixes=prefix_list, start_date=datetime.min, end_date=kwargs['execution_date']))
+    logging.info('Number of prefixes: %d ', len(prefix_list))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-        future_to_url = {executor.submit(get_objects, prefix): prefix for prefix in prefix_list}
+        future_objects = {executor.submit(get_objects, prefix): prefix for prefix in prefix_list}
         with open(output, 'w') as f:
-            for future in concurrent.futures.as_completed(future_to_url):
-                url = future_to_url[future]
+            for future in concurrent.futures.as_completed(future_objects):
+                url = future_objects[future]
                 try:
                     data = future.result()
                 except Exception as exc:
@@ -86,13 +95,12 @@ def store_objects_in_db(**kwargs):
 
     logging.info('%d stations stored in db\n', len(station_dao.get_all()))
     logging.info('%d measurements stored in db\n', len(mes_dao.get_all()))
-    logging.info('%d valid records processed\n', records)
 
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2017, 9, 27),
+    'start_date': datetime(2017, 9, 26),
     'end_date': datetime(2017, 9, 29),
     'provide_context': True,
     'catchup': True
@@ -103,7 +111,7 @@ op_kwargs = {
     'prefix': 'test-realtime/',
 }
 
-dag = DAG('get-aqdata-parallel', default_args=default_args, schedule_interval=timedelta(1))
+dag = DAG('get-aqdata-parallel', default_args=default_args, schedule_interval=timedelta(days=1))
 
 get_prefixes_task = PythonOperator(task_id='generate_prefix_list',
                                    python_callable=generate_prefix_list,

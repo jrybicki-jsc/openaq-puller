@@ -73,6 +73,23 @@ def test_filter_prefixes():
     assert len(list(filtered)) == 4
 
 
+def test_filter_prefixes_nostart():
+    ll = ['realtime/2014-03-02/',
+          'realtime/2014-03-03/',
+          'realtime/2014-03-04/',
+          'realtime/2014-03-05/',
+          'realtime/2014-03-06/',
+          'realtime/2014-03-07/',
+          'realtime/2014-03-08/',
+          'realtime/2014-03-09/',
+          'realtime/2014-03-10/',
+          'realtime/2014-03-11/',
+          'realtime/2014-03-12/']
+
+    filtered = filter_prefixes(prefixes=ll, start_date=datetime.min, end_date=datetime(2014, 3, 8))
+    assert len(list(filtered)) == 7
+
+
 def test_get_objects():
     client = Mock()
     client.list_objects_v2 = MagicMock(return_value={
