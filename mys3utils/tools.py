@@ -75,7 +75,7 @@ def filter_objects(all_objects, start_date, end_date):
 
 def filter_prefixes(prefixes, start_date, end_date):
     patt = re.compile(r'.*/(\d{4}-\d{2}-\d{2})/')
-    return (x for x in prefixes if start_date <= parser.parse(patt.search(x).group(1)) <= end_date)
+    return (x for x in prefixes if patt.search(x) and start_date <= parser.parse(patt.search(x).group(1)) <= end_date)
 
 
 def serialize_object(l):

@@ -3,9 +3,7 @@ import os
 from mys3utils.tools import get_jsons_from_object, FETCHES_BUCKET, split_record
 
 
-def generate_fname(suffix, **kwargs):
-    base_dir = kwargs['base_dir']
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
+def generate_fname(suffix, base_dir, execution_date):
 
     fname = os.path.join(base_dir, execution_date)
 
