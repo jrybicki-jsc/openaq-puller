@@ -151,6 +151,19 @@ def test_get_jsons_from_object():
     assert len(ll) == 7444
 
 
+def test_get_json_from_gzipped_object():
+    client = Mock()
+    f = open('./tests/2014-03-30.ndjson.gz', 'rb')
+    client.get_object = MagicMock(return_value={'Body': f})
+
+    ll = list(get_jsons_from_object(bucket='bucket', object_name='2014-03-30.ndjson.gz', client=client))
+
+    f.close()
+    client.get_object.assert_called_once()
+
+    assert len(ll) == 64
+
+
 def test_massive_split():
     client = Mock()
     f = open('./tests/exobj.ndjson', 'rb')

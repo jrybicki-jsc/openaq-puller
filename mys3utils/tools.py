@@ -1,5 +1,6 @@
 import codecs
 import csv
+import gzip
 import json
 import re
 
@@ -91,10 +92,19 @@ def get_jsons_from_object(bucket, object_name, client=None):
 
     reader = codecs.getreader('utf-8')
 
-    for line in reader(body):
-        yield json.loads(line)
+    if object_name.endswith('.gz'):
+        generator = reader.decode(gzip.decompress(body.read()))[0].split('\n')
+    else:
+        generator = reader(body)
+
+    for line in generator:
+        try:
+            yield json.loads(line)
+        except:
+            print('Unable to deserialize [%s]' % line)
 
     body.close()
+
 
 
 def read_object_list(input_file):

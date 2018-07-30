@@ -21,6 +21,7 @@ def generate_fname(suffix, **kwargs):
     fname = os.path.join(fname, suffix)
     return fname
 
+
 def get_prefixes(**kwargs):
     prefix = kwargs['prefix']
     fname = generate_fname('prefix.dat', **kwargs)
@@ -54,9 +55,9 @@ def add_to_database(**kwargs):
     with open(objs, 'r') as f:
         wl = read_object_list(f)
 
-    #execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-    #previous_run = kwargs['prev_execution_date'].strftime('%Y-%m-%dT%H-%M')
-    #filtered = list(filter_objects(all_objects=wl, start_date=previous_run, end_date=execution_date))
+    # execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
+    # previous_run = kwargs['prev_execution_date'].strftime('%Y-%m-%dT%H-%M')
+    # filtered = list(filter_objects(all_objects=wl, start_date=previous_run, end_date=execution_date))
     filtered = list(wl)
 
     engine = get_engine()
