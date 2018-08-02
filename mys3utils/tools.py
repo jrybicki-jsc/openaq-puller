@@ -106,7 +106,6 @@ def get_jsons_from_object(bucket, object_name, client=None):
     body.close()
 
 
-
 def read_object_list(input_file):
     objects = []
 
