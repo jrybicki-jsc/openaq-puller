@@ -15,8 +15,9 @@ class ObjectList(object):
     def get_date(self):
         return self.execution_date
 
-    def refresh(self):
-        pass
+    def retrieve(self):
+        objs, _ = get_object_list(bucket_name=FETCHES_BUCKET, prefix=self.prefix)
+        return objs
 
     def store(self):
         pass
@@ -43,8 +44,8 @@ class FileBasedObjectList(ObjectList):
                                execution_date=self.execution_date.strftime('%Y-%m-%d'))
 
         if not os.path.isfile(fname):
-            logging.info('Old object list %s does not exist for some reason. Regenerating', fname)
-            self.refresh()
+            logging.info('Old object list %s does not exist for some reason. Retrieving', fname)
+            self.objects = self.retrieve()
         else:
             with open(fname, 'r') as f:
                 object_reader = csv.DictReader(f, fieldnames=['Name', 'Size', 'ETag', 'LastModified'])
@@ -65,5 +66,3 @@ class FileBasedObjectList(ObjectList):
 
         return fname
 
-    def refresh(self):
-        self.objects, _ = get_object_list(bucket_name=FETCHES_BUCKET, prefix=self.prefix)

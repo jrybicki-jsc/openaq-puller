@@ -4,7 +4,7 @@ import types
 from string import Template
 
 from airflow.hooks.postgres_hook import PostgresHook
-from airflow import DAG, utils
+from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 import logging
 
@@ -19,7 +19,7 @@ def generate_object_list(**kwargs):
     prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
     logging.info('Will be getting objects for %s', prefix)
     pfl = FileBasedObjectList(prefix=prefix, **kwargs)
-    pfl.refresh()
+    pfl.retrieve()
     pfl.store()
 
 
@@ -51,12 +51,20 @@ def transform_objects(**kwargs):
     mes_dao = MeasurementDAO(engine=wrapper)
     station_dao.create_table()
 
-    pfl = FileBasedObjectList(prefix=prefix,
-                              **kwargs)
+    pfl = FileBasedObjectList(prefix=prefix, **kwargs)
     pfl.load()
-    logging.info('--->')
+    objects_count = len(pfl.get_list())
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+    if objects_count / 16 > 3:
+        workers = 16
+    elif objects_count > 1:
+        workers = objects_count
+    else:
+        workers = 1
+
+    logging.info('Loaded %d objects. Will be using %d workers', objects_count, workers)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         processor_objects = {executor.submit(local_process_file, obj['Name']): obj['Name'] for obj in pfl.get_list()}
 
         for future in concurrent.futures.as_completed(processor_objects):

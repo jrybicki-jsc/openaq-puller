@@ -1,7 +1,5 @@
-import shutil
-
-from mys3utils.object_list import FileBasedObjectList
 from datetime import date
+from mys3utils.DBFileList import DBBasedObjectList, get_engine
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
@@ -34,23 +32,35 @@ mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
 
 def test_load():
     kwargs = dict()
-    kwargs['base_dir'] = './tests/'
-    pfl = FileBasedObjectList(prefix='test', execution_date=date(2018, 6, 14), **kwargs)
-    pfl.load()
-    assert len(pfl.get_list()) == 91
+    kwargs['engine'] = get_engine()
 
-
-def test_fetch():
-    kwargs = dict()
-
-    kwargs['base_dir'] = './tests/'
-    shutil.rmtree('./tests/2018-07-21/')
-    pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+    pfl = DBBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
     pfl.retrieve = MagicMock(return_value=mylist)
     pfl.load()
     pfl.store()
     assert len(pfl.get_list()) == 5
+    pfl.retrieve.assert_called_once()
 
-    pfl2 = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-    pfl2.load()
-    assert len(pfl.get_list()) == len(pfl2.get_list()) == 5
+    pfl.retrieve = MagicMock(return_value=[])
+    pfl.load()
+    pfl.retrieve.assert_not_called()
+    assert len(pfl.get_list()) == 5
+
+
+
+def test_load2():
+    kwargs = dict()
+    kwargs['engine'] = get_engine()
+
+    pfl = DBBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+    pfl.retrieve = MagicMock(return_value=mylist)
+    pfl.load()
+    pfl.store()
+    pfl.store()
+    pfl.store()
+
+    pfl.load()
+
+    assert len(pfl.get_list()) == 5
+    pfl.retrieve.assert_called_once()
+

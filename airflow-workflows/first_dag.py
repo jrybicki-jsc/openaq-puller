@@ -2,7 +2,7 @@ from airflow import DAG, utils
 from airflow.operators.python_operator import PythonOperator
 #from airflow.lineage.datasets import File
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 
 
@@ -45,8 +45,9 @@ base_dir = '/tmp/data/'
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': utils.dates.days_ago(2),
-    'provide_context': True
+    'start_date': datetime(2017, 1, 1),
+    'provide_context': True,
+    'catchup': True
 }
 
 #pref_outs = File("/tmp/{{ execution_date }}.dat")
