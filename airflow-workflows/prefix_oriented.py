@@ -10,17 +10,9 @@ import logging
 
 from models.Measurement import MeasurementDAO
 from models.StationMeta import StationMetaCoreDAO
+from mys3utils.DBFileList import DBBasedObjectList
 from mys3utils.object_list import FileBasedObjectList
 from mys3utils.tools import get_jsons_from_object, FETCHES_BUCKET, split_record
-
-
-def generate_object_list(**kwargs):
-    date = kwargs['execution_date']
-    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
-    logging.info('Will be getting objects for %s', prefix)
-    pfl = FileBasedObjectList(prefix=prefix, **kwargs)
-    pfl.retrieve()
-    pfl.store()
 
 
 def local_process_file(object_name):
@@ -40,10 +32,7 @@ def add_to_db(station_dao, mes_dao, station, measurement):
                   date=measurement['date']['utc'])
 
 
-def transform_objects(**kwargs):
-    date = kwargs['execution_date']
-    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
-
+def setup_daos():
     pg = PostgresHook(postgres_conn_id='openaq-db')
     wrapper = types.SimpleNamespace()
     wrapper.get_engine = pg.get_sqlalchemy_engine
@@ -51,7 +40,38 @@ def transform_objects(**kwargs):
     mes_dao = MeasurementDAO(engine=wrapper)
     station_dao.create_table()
 
-    pfl = FileBasedObjectList(prefix=prefix, **kwargs)
+    return mes_dao, station_dao
+
+
+def get_file_list(prefix, **kwargs):
+    try:
+        pg = PostgresHook(postgres_conn_id='file_list_db')
+        engine = pg.get_sqlalchemy_engine()
+        logging.info('Using db-based object list')
+        fl = DBBasedObjectList(engine=engine, prefix=prefix, **kwargs)
+    except:
+        logging.info('Using file-based object list')
+        fl = FileBasedObjectList(prefix=prefix, **kwargs)
+
+    return fl
+
+
+def generate_object_list(**kwargs):
+    date = kwargs['execution_date']
+    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
+    logging.info('Will be getting objects for %s', prefix)
+    pfl = get_file_list(prefix=prefix, **kwargs)
+    pfl.update()
+    pfl.store()
+
+
+def transform_objects(**kwargs):
+    date = kwargs['execution_date']
+    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
+
+    mes_dao, station_dao = setup_daos()
+
+    pfl = get_file_list(prefix=prefix, **kwargs)
     pfl.load()
     objects_count = len(pfl.get_list())
 
@@ -85,8 +105,8 @@ def transform_objects(**kwargs):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2013, 11, 26),
-    'end_date': datetime(2013, 11, 28),
+    'start_date': datetime(2018, 7, 29),
+    'end_date': datetime(2018, 7, 31),
     'provide_context': True,
     'catchup': True
 }

@@ -84,12 +84,14 @@ services:
            context: .
            dockerfile: ./docker/Dockerfile
         restart: always
+        cpu_shares: 500
         depends_on:
             - scheduler
         volumes:
             - ./airflow-workflows:/usr/local/airflow/dags
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
+        #cpu: 4
         environment:
             - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
             - EXECUTOR=Celery

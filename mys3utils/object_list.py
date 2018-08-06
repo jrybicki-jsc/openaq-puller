@@ -19,6 +19,9 @@ class ObjectList(object):
         objs, _ = get_object_list(bucket_name=FETCHES_BUCKET, prefix=self.prefix)
         return objs
 
+    def update(self):
+        self.objects = self.retrieve()
+
     def store(self):
         pass
 

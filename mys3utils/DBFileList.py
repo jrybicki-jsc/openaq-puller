@@ -5,6 +5,7 @@ from .object_list import ObjectList
 from sqlalchemy import Table, MetaData, Column, Integer, String, ForeignKey, Sequence, DateTime, select, create_engine
 from sqlalchemy.sql import and_
 
+
 metadata = MetaData()
 
 checks = Table('prefix_checks', metadata,
@@ -18,7 +19,7 @@ objects = Table('object', metadata,
                 Column('prefix_check', None, ForeignKey('prefix_checks.id')),
                 Column('name', String(128)),
                 Column('size', Integer),
-                Column('checksum', String(32)),
+                Column('checksum', String(34)),
                 Column('created', DateTime),
                 keep_existing=True,
                 )
@@ -38,10 +39,12 @@ class DBBasedObjectList(ObjectList):
         s = select([checks.c.id]).where(and_(self.prefix == checks.c.prefix, self.execution_date == checks.c.date))
 
         res = self.engine.execute(s)
-        if res is not None:
-            first = res.first()
-            logging.info('Got check! %r' % first)
-            return first
+        first = res.first()
+        if first is not None:
+
+            chk_id = first[0]
+            logging.info('Got check! %r' % chk_id)
+            return chk_id
 
         logging.info('No such check')
         return None
@@ -69,11 +72,13 @@ class DBBasedObjectList(ObjectList):
             all = self.engine.execute(s).fetchall()
             self.objects = []
             for r in all:
-                self.objects.append({'Key': r[1], 'Size': r[2], 'ETag': r[3], 'LastModified': r[4]})
+                self.objects.append({'Name': r[1], 'Size': int(r[2]), 'ETag': r[3], 'LastModified': r[4]})
 
     def store(self):
         logging.info('Storing %d objects in %s', len(self.objects), 'dbname')
-        ## is it a new check?
+        if self.check_id is None:
+            self.check_id = self.get_check()
+
         if self.check_id is None:
             logging.info('No such check....')
             self.check_id = self.create_check()
