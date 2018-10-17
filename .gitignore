@@ -2,3 +2,4 @@ env/*
 data/*
 *.pyc
 .idea/*
+tests/2018-07-21/

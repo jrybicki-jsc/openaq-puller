@@ -21,7 +21,7 @@ class Aggregate(luigi.Task):
     date_interval = luigi.DateIntervalParameter()
 
     def output(self):
-        return luigi.LocalTarget('data/aggregatet.dat'.format(self.date_interval))
+        return luigi.LocalTarget('data/aggregatet%r.dat'.format(self.date_interval))
 
     def requires(self):
         return [ObjectList(date) for date in self.date_interval]

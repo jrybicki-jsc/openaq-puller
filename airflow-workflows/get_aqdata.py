@@ -69,7 +69,7 @@ def add_to_database(**kwargs):
 
     for obj in filtered:
         for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=obj['Name']):
-            station, measurement, ext = split_record(record)
+            station, measurement, _ = split_record(record)
 
             stat_id = station_dao.store_from_json(station)
 
@@ -80,9 +80,9 @@ def add_to_database(**kwargs):
 
             records += 1
 
-    logging.info('%d stations stored in db\n', len(station_dao.get_all()))
-    logging.info('%d measurements stored in db\n', len(mes_dao.get_all()))
-    logging.info('%d valid records processed\n', records)
+    logging.info('%d stations stored in db', len(station_dao.get_all()))
+    logging.info('%d measurements stored in db', len(mes_dao.get_all()))
+    logging.info('%d valid records processed', records)
 
 
 default_args = {

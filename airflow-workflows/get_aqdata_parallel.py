@@ -13,7 +13,7 @@ from models.StationMeta import get_engine, StationMetaCoreDAO
 from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, get_objects, \
     filter_objects, filter_prefixes
 
-from utils import *
+from localutils import generate_fname, local_process_file, add_to_db
 
 
 def store_prefix_list(prefixes, **kwargs):
