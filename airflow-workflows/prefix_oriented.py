@@ -1,23 +1,22 @@
 import concurrent.futures
-from datetime import timedelta, datetime
 import types
-from string import Template
+import logging
 
+from datetime import timedelta, datetime
+from string import Template
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-import logging
 
 from models.Measurement import MeasurementDAO
 from models.StationMeta import StationMetaCoreDAO
-from mys3utils.DBFileList import DBBasedObjectList
-from mys3utils.object_list import FileBasedObjectList
 from mys3utils.tools import get_jsons_from_object, FETCHES_BUCKET, split_record
+from localutils import get_file_list
 
 
 def local_process_file(object_name):
     for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=object_name):
-        station, measurement, ext = split_record(record)
+        station, measurement, _ = split_record(record)
 
         yield [station, measurement]
 
@@ -41,19 +40,6 @@ def setup_daos():
     station_dao.create_table()
 
     return mes_dao, station_dao
-
-
-def get_file_list(prefix, **kwargs):
-    try:
-        pg = PostgresHook(postgres_conn_id='file_list_db')
-        engine = pg.get_sqlalchemy_engine()
-        logging.info('Using db-based object list')
-        fl = DBBasedObjectList(engine=engine, prefix=prefix, **kwargs)
-    except:
-        logging.info('Using file-based object list')
-        fl = FileBasedObjectList(prefix=prefix, **kwargs)
-
-    return fl
 
 
 def generate_object_list(**kwargs):
