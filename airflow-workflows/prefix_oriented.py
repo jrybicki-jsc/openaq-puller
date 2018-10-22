@@ -41,23 +41,21 @@ def setup_daos():
 
     return mes_dao, station_dao
 
-
-def generate_object_list(**kwargs):
+def setup_objectlist(**kwargs):
     date = kwargs['execution_date']
     prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
-    logging.info('Will be getting objects for %s', prefix)
     pfl = get_file_list(prefix=prefix, **kwargs)
+    return pfl
+
+
+def generate_object_list(**kwargs):
+    pfl = setup_objectlist(**kwargs)
+    logging.info('Retrieving object names for prefix: %s', pfl.get_prefix())
     pfl.update()
     pfl.store()
 
-
 def transform_objects(**kwargs):
-    date = kwargs['execution_date']
-    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
-
-    mes_dao, station_dao = setup_daos()
-
-    pfl = get_file_list(prefix=prefix, **kwargs)
+    pfl = setup_objectlist(**kwargs)
     pfl.load()
     objects_count = len(pfl.get_list())
 
@@ -69,6 +67,8 @@ def transform_objects(**kwargs):
         workers = 1
 
     logging.info('Loaded %d objects. Will be using %d workers', objects_count, workers)
+
+    mes_dao, station_dao = setup_daos()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         processor_objects = {executor.submit(local_process_file, obj['Name']): obj['Name'] for obj in pfl.get_list()}

@@ -29,6 +29,9 @@ class ObjectList(object):
         # deep copy?frozen?
         return self.objects
 
+    def get_prefix(self):
+        return self.prefix
+
 
 def generate_fname(suffix, base_dir, execution_date):
     fname = os.path.join(base_dir, execution_date)
