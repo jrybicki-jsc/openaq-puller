@@ -13,7 +13,7 @@ stationmeta = Table('stationmetacore', metadata,
                     keep_existing=True,
                     )
 
-mes_meta = Table('measurement', metadata,
+timeseries = Table('timeseries', metadata,
                  Column('id', Integer, Sequence('mes_id_seq'), primary_key=True),
                  Column('station_id', None, ForeignKey('stationmetacore.station_id')),
                  Column('parameter', String(60)),

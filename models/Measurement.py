@@ -1,4 +1,4 @@
-from models import mes_meta, metadata
+from models import timeseries, metadata
 from sqlalchemy import select
 from dateutil import parser
 
@@ -14,7 +14,7 @@ class MeasurementDAO(object):
         metadata.drop_all(self.engine)
 
     def store(self, station_id, parameter, value, unit, averagingPeriod, date):
-        ins = mes_meta.insert().values(
+        ins = timeseries.insert().values(
             station_id=station_id,
             parameter=parameter,
             value=value,
@@ -28,5 +28,5 @@ class MeasurementDAO(object):
         return last_id
 
     def get_all(self):
-        s = select([mes_meta])
+        s = select([timeseries])
         return self.engine.execute(s).fetchall()
