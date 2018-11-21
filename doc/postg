@@ -2,4 +2,47 @@ run -dP -e POSTGRES_PASSWORD=mysecretpassword --name mypos postgres
 docker run -it --rm --link mypos:postgres postgres psql -h postgres -U postgres
 
 
-PYTHONPATH='.' luigi --local-scheduler --module workflows.getter GetObjects --prefix test-realtime/ --end-date 2017-09-28T182526
+PYTHONPATH='.' luigi --local-scheduler --module workflows.getter GetObjects --prefix test-realtime/ --end-date 2017-09-28T182526AIRFLOW__CORE__DAGS_FOLDER=/Users/jj/git/openaq-puller/airflow-workflows/ airflow list_dags
+
+AIRFLOW__CORE__DAGS_FOLDER=/Users/jj/git/openaq-puller/airflow-workflows/ airflow run get-aqdata generate_object_list 2012-01-02
+
+AIRFLOW__CORE__DAGS_FOLDER=/Users/jj/git/openaq-puller/airflow-workflows/ airflow backfill get-aqdata --start_date 2016-01-01
+
+AIRFLOW__CORE__DAGS_FOLDER=/Users/jj/git/openaq-puller/airflow-workflows/ airflow clear get-aqdata-parallel
+
+
+## connecting to local pg
+docker run -dP --network openaq-puller_default -e POSTGRES_PASSWORD=password postgres
+docker run -it --rm --network openaq-puller_default postgres /bin/bash
+# for the hooks
+docker exec kind_turing /bin/bash -c 'psql
+createdb -h openaq-puller_postgres_1 -p 5432 -U airflow -W jjdb
+CREATE TABLE mytbl (id INT, name VARCHAR(20));
+
+
+
+# Hook setup:
+docker run -dP --network openaq-puller_default --name external_postgres -e POSTGRES_PASSWORD=password postgres
+docker exec external_postgres /bin/bash -c 'createdb -U postgres jjdb'
+
+## Setup in airflow  (Admin/Connections)
+--> openaq-db (where the measurements go):
+openaq-db/Postgres/external_postgres/password/5432
+
+--> file_list_db (helper db where object list is stored):
+openaq-db/Postgres/external_postgres/password/5432
+
+## setup hooks
+docker exec -e AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://airflow:airflow@postgres:5432/airflow" openaq-puller_webserver_1 /usr/local/bin/airflow connections --add --conn_id openaq_conn --conn_type postgres --conn_host external_progress --conn_login postgres --conn_password password --conn_schema jjdb --conn_port 5432
+
+docker exec external_postgres /bin/bash -c 'psql -U postgres jjdb -c "SELECT * FROM prefix_check"'
+
+TODO:
+#experiment with:
+airflow connections \
+    --add \
+    --conn_id AWSS3LogStorage \
+    --conn_type s3 \
+    --conn_extra '{"aws_access_key_id": "...", "aws_secret_access_key": "..."}'
+
+# experiment with Dask for running jobs

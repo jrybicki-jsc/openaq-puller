@@ -58,31 +58,17 @@ def transform_objects(**kwargs):
     pfl = setup_objectlist(**kwargs)
     pfl.load()
     objects_count = len(pfl.get_list())
-
-    if objects_count / 16 > 3:
-        workers = 16
-    elif objects_count > 1:
-        workers = objects_count
-    else:
-        workers = 1
-
-    logging.info('Loaded %d objects. Will be using %d workers', objects_count, workers)
+    logging.info('Loaded %d objects.', objects_count)
 
     mes_dao, station_dao = setup_daos()
+    process = lambda x: local_process_file(x['Name'])
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        processor_objects = {executor.submit(local_process_file, obj['Name']): obj['Name'] for obj in pfl.get_list()}
-
-        for future in concurrent.futures.as_completed(processor_objects):
-            object_name = processor_objects[future]
-            try:
-                rr = future.result()
-            except Exception as exc:
-                logging.warning('%r generated an exception: %s', object_name, exc)
-            else:
-                logging.info('Processing %s', object_name)
-                for it in rr:
-                    add_to_db(station_dao=station_dao, mes_dao=mes_dao, station=it[0], measurement=it[1])
+    with concurrent.futures.ThreadPoolExecutor(max_workers=None) as executor:
+        for obj, results in zip(pfl.get_list(), executor.map(process, pfl.get_list())):
+            logging.info('Processing %s (%d)', obj['Name'], obj['Size'])
+            # we are linerizing it here anyways?
+            for it in results:
+                add_to_db(station_dao, mes_dao, station=it[0], measurement=it[1])
 
     logging.info('%d stations stored in db\n', len(station_dao.get_all()))
     logging.info('%d measurements stored in db\n', len(mes_dao.get_all()))

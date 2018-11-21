@@ -31,7 +31,6 @@ def download_and_store(**kwargs):
     pfl.load()
     objects_count = len(pfl.get_list())
     logging.info('Downloading %d objects from %s to %s',  objects_count, prefix, target_dir)
-    #for obj in pfl.get_list():
     
     client = boto3.client('s3', config=botocore.client.Config(signature_version=botocore.UNSIGNED))
 

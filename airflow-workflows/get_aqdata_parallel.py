@@ -78,7 +78,7 @@ def generate_object_list_parallel(**kwargs):
 
     logging.info('Number of prefixes to process: %d ', len(prefix_list))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=None) as executor:
         future_objects = {executor.submit(get_objects, prefix): prefix for prefix in prefix_list}
         with open(output, 'w') as f:
             for future in concurrent.futures.as_completed(future_objects):
@@ -117,7 +117,7 @@ def store_objects_in_db(**kwargs):
     mes_dao = MeasurementDAO(engine=engine)
     station_dao.create_table()
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=None) as executor:
         processor_objects = {executor.submit(local_process_file, obj['Name']): obj['Name'] for obj in filtered}
 
         for future in concurrent.futures.as_completed(processor_objects):
