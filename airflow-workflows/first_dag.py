@@ -1,66 +1,34 @@
 from airflow import DAG, utils
 from airflow.operators.python_operator import PythonOperator
-#from airflow.lineage.datasets import File
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.dummy_operator import DummyOperator
 
+import logging
 from datetime import timedelta, datetime
-import os
 
 
-## example of a DAG which writes to a file, there is no guarantee that
-## it will work in a distributed setting (workers could be working on
-## different machines)
-
-def get_objectnames(**kwargs):
-    base_dir = kwargs['base_dir']
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-    for k, v in kwargs.items():
-        print('%s --> %s' %(k, v))
-
-    print('Getting prefixes %s' % base_dir)
-    fname = os.path.join(base_dir, execution_date)
-    os.makedirs(fname)
-    fname = os.path.join(fname, 'objects.csv')
-
-    with open(fname, 'w+') as f:
-        for i in range(10):
-            f.write('Somedata %d\n' % i)
-
-    return 'Yo'
-
-
-def add_to_database(**kwargs):
-    base_dir = kwargs['base_dir']
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-
-    fname = os.path.join(base_dir, execution_date, 'objects.csv')
-    with open(fname, 'r') as f:
-        for line in f.readlines():
-            print('==> %s' % line)
-
-    return 0
-
-
-base_dir = '/tmp/data/'
+def myfunc(*args, **kwargs):
+    owner = default_args['owner']
+    logging.info('Data Science is hard Mr. %s', owner)
+    return 'Fine'
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'start_date': datetime(2017, 1, 1),
+    'end_date': datetime(2017, 1, 2), 
     'provide_context': True,
     'catchup': True
 }
 
-#pref_outs = File("/tmp/{{ execution_date }}.dat")
+dag = DAG('the-first', default_args=default_args, schedule_interval='@daily')
 
-dag = DAG('jj-first', default_args=default_args, schedule_interval=timedelta(1))
+with dag:
+    print_date_task = BashOperator(task_id='print_date', bash_command='date')
+    ds_task = PythonOperator(task_id='do_some_python', python_callable=myfunc)
+    sink = DummyOperator(task_id='sink')
 
-get_prefixes_task = PythonOperator(task_id='get_prefixes',
-                                   python_callable=get_objectnames,
-                                   op_kwargs={'base_dir': base_dir}, dag=dag)
 
-add_to_database_task = PythonOperator(task_id='add_to_db',
-                                      python_callable=add_to_database,
-                                      op_kwargs={'base_dir': base_dir},
-                                      dag=dag)
+print_date_task >> ds_task >> sink
 
-get_prefixes_task.set_downstream(add_to_database_task)
+
