@@ -28,7 +28,14 @@ with dag:
     ds_task = PythonOperator(task_id='do_some_python', python_callable=myfunc)
     sink = DummyOperator(task_id='sink')
 
+print_date_task >> ds_task 
 
-print_date_task >> ds_task >> sink
+for i in range(3):
+    dt = DummyOperator(task_id='dummy_%d'%i, dag=dag)
+    ds_task >> dt
+    dt >> sink
+    
+
+
 
 
