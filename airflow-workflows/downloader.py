@@ -11,8 +11,10 @@ import logging
 from mys3utils.tools import FETCHES_BUCKET
 from localutils import get_file_list
 
+from airflow.models import Variable
 
-def generate_object_list(**kwargs):
+
+def generate_object_list(*args, **kwargs):
     date = kwargs['execution_date']
     prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
     logging.info('Will be getting objects for %s', prefix)
@@ -22,11 +24,12 @@ def generate_object_list(**kwargs):
 
 
 def download_and_store(**kwargs):
-    target_dir = kwargs['target_dir']
-    os.makedirs(target_dir, exist_ok=True)
-
     date = kwargs['execution_date']
     prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
+
+    target_dir = os.path.join(Variable.get('target_dir'), prefix)
+    os.makedirs(target_dir, exist_ok=True)
+
     pfl = get_file_list(prefix=prefix, **kwargs)
     pfl.load()
     objects_count = len(pfl.get_list())
@@ -57,8 +60,7 @@ default_args = {
 
 op_kwargs = {
     'prefix-pattern': 'test-realtime-gzip/$date/',
-    'base_dir': '/tmp/',
-    'target_dir': '/tmp/target',
+    'base_dir': '/tmp/'
 }
 
 dag = DAG('downloader', default_args=default_args, schedule_interval=timedelta(1))
