@@ -13,10 +13,19 @@ from localutils import get_file_list
 
 from airflow.models import Variable
 
+def get_prefix(**kwargs):
+    date = kwargs['execution_date']
+    prefix_pattern = Variable.get('prefix_pattern')
+    if prefix_pattern is None:
+        logging.info('No prefix pattern provided (use prefix_pattern variable)')
+        prefix_pattern = 'test-realtime-gzip/$date/'
+    prefix = Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d'))
+    return prefix
+
+
 
 def generate_object_list(*args, **kwargs):
-    date = kwargs['execution_date']
-    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
+    prefix = get_prefix(**kwargs)
     logging.info('Will be getting objects for %s', prefix)
     pfl = get_file_list(prefix=prefix, **kwargs)
     pfl.update()
@@ -24,8 +33,7 @@ def generate_object_list(*args, **kwargs):
 
 
 def download_and_store(**kwargs):
-    date = kwargs['execution_date']
-    prefix = Template(kwargs['prefix-pattern']).substitute(date=date.strftime('%Y-%m-%d'))
+    prefix = get_prefix(**kwargs)
 
     target_dir = os.path.join(Variable.get('target_dir'), prefix)
     os.makedirs(target_dir, exist_ok=True)
@@ -59,7 +67,7 @@ default_args = {
 }
 
 op_kwargs = {
-    'prefix-pattern': 'test-realtime-gzip/$date/',
+#    'prefix-pattern': 'test-realtime-gzip/$date/',
     'base_dir': '/tmp/'
 }
 
