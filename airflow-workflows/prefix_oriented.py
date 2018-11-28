@@ -50,7 +50,7 @@ def setup_objectlist(**kwargs):
 
 def generate_object_list(**kwargs):
     pfl = setup_objectlist(**kwargs)
-    logging.info('Retrieving object names for prefix: %s', pfl.get_prefix())
+    logging.info(f"Retrieving object names for prefix: { pfl.get_prefix() }")
     pfl.update()
     pfl.store()
 
@@ -58,20 +58,20 @@ def transform_objects(**kwargs):
     pfl = setup_objectlist(**kwargs)
     pfl.load()
     objects_count = len(pfl.get_list())
-    logging.info('Loaded %d objects.', objects_count)
+    logging.info(f'Loaded {objects_count} objects.')
 
     mes_dao, station_dao = setup_daos()
     process = lambda x: local_process_file(x['Name'])
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=None) as executor:
         for obj, results in zip(pfl.get_list(), executor.map(process, pfl.get_list())):
-            logging.info('Processing %s (%d)', obj['Name'], obj['Size'])
+            logging.info(f"Processing { obj['Name'] } ({ obj['Size']})")
             # we are linerizing it here anyways?
             for it in results:
                 add_to_db(station_dao, mes_dao, station=it[0], measurement=it[1])
 
-    logging.info('%d stations stored in db\n', len(station_dao.get_all()))
-    logging.info('%d measurements stored in db\n', len(mes_dao.get_all()))
+    logging.info(f"{ len(station_dao.get_all())} stations stored in db")
+    logging.info(f"{ len(mes_dao.get_all())} measurements stored in db")
 
 
 default_args = {
