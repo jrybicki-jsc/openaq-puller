@@ -43,7 +43,7 @@ def get_file_list(prefix, **kwargs):
         logging.info('Using db-based object list')
         fl = DBBasedObjectList(engine=engine, prefix=prefix, **kwargs)
     except:
-        logging.info('Using file-based object list')
+        logging.info(f'Using file-based object list for { prefix} ')
         fl = FileBasedObjectList(prefix=prefix, **kwargs)
 
     return fl

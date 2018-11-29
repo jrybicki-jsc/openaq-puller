@@ -83,6 +83,21 @@ def serialize_object(l):
     return ','.join([l['Key'], str(l['Size']), l['ETag'], l['LastModified'].isoformat()]) + '\n'
 
 
+def get_jsons_from_stream(stream, object_name=''):
+    reader = codecs.getreader('utf-8')
+
+    if object_name.endswith('.gz'):
+        generator = reader.decode(gzip.decompress(stream.read()))[0].split('\n')
+    else:
+        generator = reader(stream)
+
+    for line in generator:
+        try:
+            yield json.loads(line)
+        except:
+            print('Unable to deserialize [%s]' % line)
+
+
 def get_jsons_from_object(bucket, object_name, client=None):
     if client is None:
         client = boto3.client('s3', config=botocore.client.Config(signature_version=botocore.UNSIGNED))
@@ -103,6 +118,7 @@ def get_jsons_from_object(bucket, object_name, client=None):
         except:
             print('Unable to deserialize [%s]' % line)
 
+    
     body.close()
 
 

@@ -1,5 +1,5 @@
 from mys3utils.tools import filter_objects, get_object_list, read_object_list, get_jsons_from_object, split_record, \
-    filter_prefixes
+    filter_prefixes, get_jsons_from_stream
 from datetime import datetime, timedelta, timezone
 import random
 from unittest.mock import MagicMock, Mock
@@ -150,6 +150,15 @@ def test_get_jsons_from_object():
     client.get_object.assert_called_once()
     assert len(ll) == 7444
 
+def test_get_jsons_from_stream():
+    with open('./tests/exobj.ndjson', 'rb') as f:
+        ll = list(get_jsons_from_stream(stream=f, object_name='./tests/exobj.ndjson'))
+        assert len(ll) == 7444
+
+def test_get_jsons_from_gzipped_stream():
+    with open('./tests/2014-03-30.ndjson.gz', 'rb') as f:
+        ll = list(get_jsons_from_stream(stream=f, object_name='./tests/2014-03-30.ndjson.gz'))
+        assert len(ll) == 64
 
 def test_get_json_from_gzipped_object():
     client = Mock()
