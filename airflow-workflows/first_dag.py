@@ -22,7 +22,7 @@ default_args = {
     'catchup': True
 }
 
-dag = DAG('the-first', default_args=default_args, schedule_interval='@daily')
+dag = DAG(dag_id='the-first', default_args=default_args, schedule_interval='@daily')
 
 with dag:
     print_date_task = BashOperator(task_id='print_date', bash_command='date')
