@@ -9,7 +9,7 @@ def get_fake_list(start_date, count):
     day = timedelta(days=1)
     cdate = start_date
     lst = []
-    for i in range(0, count):
+    for _ in range(0, count):
         lst.append({'Key': 'realtime/2013-11-27/2013-11-27.ndjson',
                     'LastModified': cdate,
                     'ETag': '"0214c4d59b099b041aa651c8221aa4f3"',
