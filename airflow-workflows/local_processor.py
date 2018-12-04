@@ -11,21 +11,12 @@ from mys3utils.tools import get_jsons_from_stream, split_record
 
 from prefix_oriented import add_to_db, setup_daos, print_db_stats
 
-
-def get_prefix(**kwargs):
-    date = kwargs['execution_date']
-    prefix_pattern = Variable.get('prefix_pattern')
-    if prefix_pattern is None:
-        logging.warning(
-            'No prefix pattern provided (use prefix_pattern variable)')
-        prefix_pattern = 'test-realtime-gzip/$date/'
-    return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d'))
-
+from localutils import get_prefix_from_template as get_prefix
 
 def go_through(**kwargs):
     prefix = get_prefix(**kwargs)
     target_dir = os.path.join(Variable.get('target_dir'), prefix)
-    logging.info(f'Will be processing { target_dir }')
+    logging.info(f'Will be processing [{ target_dir }]')
 
     flist = glob.glob(os.path.join(target_dir, '*'))
     logging.info(f'Files detected: { len(flist)}')
@@ -45,8 +36,8 @@ def go_through(**kwargs):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2017, 9, 27),
-    'end_date': datetime(2017, 9, 29),
+    'start_date': datetime(2013, 11, 26),
+    'end_date': datetime(2013, 11, 28),
     'provide_context': True,
     'catchup': True
 }

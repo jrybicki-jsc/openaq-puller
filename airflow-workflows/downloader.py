@@ -11,30 +11,14 @@ from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mys3utils.tools import FETCHES_BUCKET
 
-from localutils import get_file_list
-
-
-def get_prefix(**kwargs):
-    date = kwargs['execution_date']
-    prefix_pattern = Variable.get('prefix_pattern')
-    if prefix_pattern is None:
-        logging.warning(
-            'No prefix pattern provided (use prefix_pattern variable)')
-        prefix_pattern = 'realtime-gzipped/$date/'
-    return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d')).strip()
+from localutils import get_file_list, get_prefix_from_template as get_prefix
 
 
 def generate_object_list(*args, **kwargs):
     prefix = get_prefix(**kwargs)
     logging.info(f'Will be getting objects for {prefix}')
     pfl = get_file_list(prefix=prefix, **kwargs)
-    logging.info('Updating....')
     pfl.update()
-    logging.info(f'we got: {len(pfl.get_list())}')
-
-    ll = pfl.retrieve()
-    logging.info(f'2. got: {len(ll)}')
-
     pfl.store()
 
 

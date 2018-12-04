@@ -9,9 +9,19 @@ from airflow.hooks.postgres_hook import PostgresHook
 from models.Measurement import MeasurementDAO
 from models.Series import SeriesDAO
 from models.StationMeta import StationMetaCoreDAO
-
+from airflow.models import Variable
+from string import Template
 import types
 
+
+def get_prefix_from_template(**kwargs):
+    date = kwargs['execution_date']
+    prefix_pattern = Variable.get('prefix_pattern')
+    if prefix_pattern is None:
+        logging.warning(
+            'No prefix pattern provided (use prefix_pattern variable)')
+        prefix_pattern = 'test-realtime-gzip/$date/'
+    return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d')).strip()
 
 def generate_fname(suffix, base_dir, execution_date):
     fname = os.path.join(base_dir, execution_date)
@@ -26,7 +36,7 @@ def add_to_db(station_dao, series_dao, mes_dao, station, measurement):
     series_id = series_dao.store(station_id=stat_id,
                   parameter=measurement['parameter'],
                   unit=measurement['unit'],
-                  averagingPeriod=measurement['averagingPeriod'])
+                  averagingPeriod=f"measurement['averagingPeriod']")
 
     mes_dao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
 
