@@ -43,7 +43,7 @@ class StationMetaCoreDAO(object):
     def drop_table(self):
         metadata.drop_all(self.engine)
 
-    def store(self, station_id, station_name, station_latitude, station_longitude, station_altitude,
+    def store(self, station_id, station_name, station_location, station_latitude, station_longitude, station_altitude,
               station_country, station_state):
 
         r = self.get_for_name(station_name)
@@ -53,6 +53,7 @@ class StationMetaCoreDAO(object):
         ins = stationmeta.insert().values(
             station_id=station_id,
             station_name=station_name,
+            station_location=station_location,
             station_latitude=station_latitude,
             station_longitude=station_longitude,
             station_altitude=station_altitude,
@@ -71,8 +72,9 @@ class StationMetaCoreDAO(object):
         return res.first()
 
     def store_from_json(self, dct):
-        return self.store(station_id=dct['sourceName'],
-                          station_name=dct['sourceName'],
+        return self.store(station_id=dct['location'],
+                          station_name=dct['location'],
+                          station_location=dct['city'],
                           station_latitude=dct['coordinates']['latitude'],
                           station_longitude=dct['coordinates']['longitude'],
                           station_altitude=0,

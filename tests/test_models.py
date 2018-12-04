@@ -42,7 +42,7 @@ def test_store_intodb():
     asj = json.loads(jseg)
     res = dao.store_from_json(asj)
     assert res is not None
-    assert res == "Chile - SINCA"
+    assert res == "La Florida"
 
     result = dao.get_all()
     assert len(result) == 1
@@ -105,9 +105,9 @@ def test_get_for_name():
     res = dao.get_for_name(station_name='foo')
     assert res is None
 
-    res = dao.get_for_name(station_name="Chile - SINCA")
+    res = dao.get_for_name(station_name="La Florida")
     assert res is not None
-    assert res[0] == "Chile - SINCA"
+    assert res[0] == "La Florida"
     dao.drop_table()
 
 

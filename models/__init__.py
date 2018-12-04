@@ -4,6 +4,7 @@ metadata = MetaData()
 
 stationmeta = Table('stationmetacore', metadata,
                     Column('station_id', String(64), primary_key=True),
+                    Column('station_location', String(128)),
                     Column('station_name', String(128)),
                     Column('station_latitude', Float()),
                     Column('station_longitude', Float()),
