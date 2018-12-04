@@ -14,12 +14,17 @@ stationmeta = Table('stationmetacore', metadata,
                     )
 
 timeseries = Table('timeseries', metadata,
-                 Column('id', Integer, Sequence('mes_id_seq'), primary_key=True),
-                 Column('station_id', None, ForeignKey('stationmetacore.station_id')),
-                 Column('parameter', String(60)),
-                 Column('value', Float()),
-                 Column('unit', String(60)),
-                 Column('averagingPeriod', String(80)),
-                 Column('date', DateTime),
-                 keep_existing=True,
-                 )
+                   Column('id', Integer, Sequence('mes_id_seq'), primary_key=True),
+                   Column('station_id', None, ForeignKey('stationmetacore.station_id')),
+                   Column('parameter', String(60)),
+                   Column('unit', String(60)),
+                   Column('averagingPeriod', String(80)),
+                   keep_existing=True,
+                   )
+
+meseaurement = Table('measurement', metadata,
+                     Column('series_id', None, ForeignKey('timeseries.id')),
+                     Column('value', Float()),
+                     Column('date', DateTime),
+                     keep_existing=True,
+                     )
