@@ -6,9 +6,14 @@ from mys3utils.DBFileList import DBBasedObjectList
 from mys3utils.object_list import FileBasedObjectList
 from airflow.hooks.postgres_hook import PostgresHook
 
+from models.Measurement import MeasurementDAO
+from models.Series import SeriesDAO
+from models.StationMeta import StationMetaCoreDAO
+
+import types
+
 
 def generate_fname(suffix, base_dir, execution_date):
-
     fname = os.path.join(base_dir, execution_date)
 
     os.makedirs(fname, exist_ok=True)
@@ -16,14 +21,15 @@ def generate_fname(suffix, base_dir, execution_date):
     return fname
 
 
-def add_to_db(station_dao, mes_dao, station, measurement):
+def add_to_db(station_dao, series_dao, mes_dao, station, measurement):
     stat_id = station_dao.store_from_json(station)
-    mes_dao.store(station_id=stat_id,
+    series_id = series_dao.store(station_id=stat_id,
                   parameter=measurement['parameter'],
-                  value=measurement['value'],
                   unit=measurement['unit'],
-                  averagingPeriod=measurement['averagingPeriod'],
-                  date=measurement['date']['utc'])
+                  averagingPeriod=measurement['averagingPeriod'])
+
+    mes_dao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
+
 
 
 def local_process_file(object_name):
@@ -32,7 +38,6 @@ def local_process_file(object_name):
         station, measurement, _ = split_record(record)
 
         ret.append([station, measurement])
-
     return ret
 
 
@@ -47,3 +52,23 @@ def get_file_list(prefix, **kwargs):
         fl = FileBasedObjectList(prefix=prefix, **kwargs)
 
     return fl
+
+def setup_daos():
+    pg = PostgresHook(postgres_conn_id='openaq-db')
+    wrapper = types.SimpleNamespace()
+    wrapper.get_engine = pg.get_sqlalchemy_engine
+    station_dao = StationMetaCoreDAO(engine=wrapper)
+    series_dao = SeriesDAO(engine=wrapper)
+    mes_dao = MeasurementDAO(engine=wrapper)
+
+    station_dao.create_table()
+    series_dao.create_table()
+    mes_dao.create_table()
+
+    return station_dao, series_dao, mes_dao
+
+def print_db_stats(station_dao, series_dao, mes_dao):
+    logging.info(f"{ len(station_dao.get_all())} stations stored in db")
+    logging.info(f"{ len(series_dao.get_all())} series stored in db")
+    logging.info(f"{ len(mes_dao.get_all())} measurements stored in db")
+    

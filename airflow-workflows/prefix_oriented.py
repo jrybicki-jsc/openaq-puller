@@ -1,5 +1,5 @@
 import concurrent.futures
-import types
+
 import logging
 
 from datetime import timedelta, datetime
@@ -8,10 +8,9 @@ from airflow.hooks.postgres_hook import PostgresHook
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 
-from models.Measurement import MeasurementDAO
-from models.StationMeta import StationMetaCoreDAO
+
 from mys3utils.tools import get_jsons_from_object, FETCHES_BUCKET, split_record
-from localutils import get_file_list
+from localutils import get_file_list, setup_daos, add_to_db, print_db_stats
 
 
 def local_process_file(object_name):
@@ -19,27 +18,6 @@ def local_process_file(object_name):
         station, measurement, _ = split_record(record)
 
         yield [station, measurement]
-
-
-def add_to_db(station_dao, mes_dao, station, measurement):
-    stat_id = station_dao.store_from_json(station)
-    mes_dao.store(station_id=stat_id,
-                  parameter=measurement['parameter'],
-                  value=measurement['value'],
-                  unit=measurement['unit'],
-                  averagingPeriod=measurement['averagingPeriod'],
-                  date=measurement['date']['utc'])
-
-
-def setup_daos():
-    pg = PostgresHook(postgres_conn_id='openaq-db')
-    wrapper = types.SimpleNamespace()
-    wrapper.get_engine = pg.get_sqlalchemy_engine
-    station_dao = StationMetaCoreDAO(engine=wrapper)
-    mes_dao = MeasurementDAO(engine=wrapper)
-    station_dao.create_table()
-
-    return mes_dao, station_dao
 
 def setup_objectlist(**kwargs):
     date = kwargs['execution_date']
@@ -60,7 +38,7 @@ def transform_objects(**kwargs):
     objects_count = len(pfl.get_list())
     logging.info(f'Loaded {objects_count} objects.')
 
-    mes_dao, station_dao = setup_daos()
+    station_dao, series_dao, mes_dao = setup_daos()
     process = lambda x: local_process_file(x['Name'])
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=None) as executor:
@@ -68,11 +46,9 @@ def transform_objects(**kwargs):
             logging.info(f"Processing { obj['Name'] } ({ obj['Size']})")
             # we are linerizing it here anyways?
             for it in results:
-                add_to_db(station_dao, mes_dao, station=it[0], measurement=it[1])
+                add_to_db(station_dao, series_dao, mes_dao, station=it[0], measurement=it[1])
 
-    logging.info(f"{ len(station_dao.get_all())} stations stored in db")
-    logging.info(f"{ len(mes_dao.get_all())} measurements stored in db")
-
+    print_db_stats(station_dao, series_dao, mes_dao)
 
 default_args = {
     'owner': 'airflow',

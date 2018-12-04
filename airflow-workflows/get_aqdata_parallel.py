@@ -1,19 +1,20 @@
+import concurrent.futures
 import logging
 import os
-
-from datetime import timedelta, datetime
-import concurrent.futures
+from datetime import datetime, timedelta
 
 from airflow import DAG, utils
-from airflow.operators.python_operator import PythonOperator, BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
-
+from airflow.operators.python_operator import (BranchPythonOperator,
+                                               PythonOperator)
 from models.Measurement import MeasurementDAO
-from models.StationMeta import get_engine, StationMetaCoreDAO
-from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, get_objects, \
-    filter_objects, filter_prefixes
+from models.StationMeta import StationMetaCoreDAO, get_engine
+from mys3utils.tools import (FETCHES_BUCKET, filter_objects, filter_prefixes,
+                             get_object_list, get_objects, read_object_list,
+                             serialize_object)
 
-from localutils import generate_fname, local_process_file, add_to_db
+from localutils import (add_to_db, generate_fname, local_process_file,
+                        print_db_stats, setup_daos)
 
 
 def store_prefix_list(prefixes, **kwargs):
@@ -21,7 +22,7 @@ def store_prefix_list(prefixes, **kwargs):
     execution_date = kwargs['execution_date'].strftime('%Y-%m-%d')
 
     fname = generate_fname(suffix='prefix.dat', base_dir=base_dir, execution_date=execution_date)
-    logging.info('Storing %d prefixes in %s', len(prefixes), fname)
+    logging.info(f'Storing {len(prefixes)} prefixes in {fname}', len(prefixes), fname)
     with open(fname, 'w+') as f:
         f.write("\n".join(prefixes))
 
@@ -31,7 +32,7 @@ def store_prefix_list(prefixes, **kwargs):
 def new_prefix_list_needed(**kwargs):
     execution_date = kwargs['execution_date'].date()
     previous_run = kwargs['prev_execution_date'].date()
-    logging.info('Start: %s End: %s', previous_run, execution_date)
+    logging.info(f'Start: {previous_run} End: {execution_date}')
     td = timedelta(days=1)
 
     if execution_date - previous_run >= td:
@@ -112,11 +113,7 @@ def store_objects_in_db(**kwargs):
         filtered = list(wl)
         logging.info('Number of non-filtered objects %d', len(filtered))
 
-    engine = get_engine()
-    station_dao = StationMetaCoreDAO(engine=engine)
-    mes_dao = MeasurementDAO(engine=engine)
-    station_dao.create_table()
-
+    station_dao, series_dao, mes_dao = setup_daos()
     with concurrent.futures.ThreadPoolExecutor(max_workers=None) as executor:
         processor_objects = {executor.submit(local_process_file, obj['Name']): obj['Name'] for obj in filtered}
 
@@ -129,10 +126,9 @@ def store_objects_in_db(**kwargs):
             else:
                 logging.info('Processing %s', object_name)
                 for it in rr:
-                    add_to_db(station_dao=station_dao, mes_dao=mes_dao, station=it[0], measurement=it[1])
+                    add_to_db(station_dao=station_dao, series_dao=series_dao, mes_dao=mes_dao, station=it[0], measurement=it[1])
 
-    logging.info('%d stations stored in db\n', len(station_dao.get_all()))
-    logging.info('%d measurements stored in db\n', len(mes_dao.get_all()))
+    print_db_stats(station_dao, serialize_object, mes_dao)
 
 
 default_args = {

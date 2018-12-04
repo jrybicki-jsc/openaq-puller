@@ -9,7 +9,7 @@ from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mys3utils.tools import get_jsons_from_stream, split_record
 
-from prefix_oriented import add_to_db, setup_daos
+from prefix_oriented import add_to_db, setup_daos, print_db_stats
 
 
 def get_prefix(**kwargs):
@@ -25,25 +25,22 @@ def get_prefix(**kwargs):
 def go_through(**kwargs):
     prefix = get_prefix(**kwargs)
     target_dir = os.path.join(Variable.get('target_dir'), prefix)
-
     logging.info(f'Will be processing { target_dir }')
 
     flist = glob.glob(os.path.join(target_dir, '*'))
     logging.info(f'Files detected: { len(flist)}')
 
-    mes_dao, station_dao = setup_daos()
+    station_dao, series_dao, mes_dao = setup_daos()
 
     for fname in flist:
         logging.info(f'Processing { fname}')
         with open(fname, 'rb') as f:
             for record in get_jsons_from_stream(stream=f, object_name=fname):
                 station, measurement, _ = split_record(record)
-                add_to_db(station_dao, mes_dao, station=station,
+                add_to_db(station_dao,series_dao, mes_dao, station=station,
                           measurement=measurement)
 
-    logging.info(f"{ len(station_dao.get_all())} stations stored in db")
-    logging.info(f"{ len(mes_dao.get_all())} measurements stored in db")
-
+    print_db_stats(station_dao, series_dao, mes_dao)
 
 default_args = {
     'owner': 'airflow',

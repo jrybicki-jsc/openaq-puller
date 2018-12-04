@@ -1,25 +1,14 @@
+import logging
+import os
+from datetime import timedelta
+
 from airflow import DAG, utils
 from airflow.operators.python_operator import PythonOperator
+from mys3utils.tools import (FETCHES_BUCKET, filter_objects,
+                             get_jsons_from_object, get_object_list,
+                             read_object_list, serialize_object, split_record)
 
-from datetime import timedelta
-import os
-import logging
-
-from models.Measurement import MeasurementDAO
-from models.StationMeta import get_engine, StationMetaCoreDAO
-from mys3utils.tools import get_object_list, FETCHES_BUCKET, serialize_object, read_object_list, split_record, \
-    get_jsons_from_object, filter_objects
-
-
-def generate_fname(suffix, **kwargs):
-    base_dir = kwargs['base_dir']
-    execution_date = kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M')
-
-    fname = os.path.join(base_dir, execution_date)
-
-    os.makedirs(fname, exist_ok=True)
-    fname = os.path.join(fname, suffix)
-    return fname
+from localutils import add_to_db, generate_fname, print_db_stats, setup_daos
 
 
 def get_prefixes(**kwargs):
@@ -35,14 +24,18 @@ def get_prefixes(**kwargs):
 
 
 def generate_objects(**kwargs):
-    fname = kwargs['ti'].xcom_pull(key='prefixes_location', task_ids='get_prefixes')
-    output = generate_fname('objects.csv', **kwargs)
-    logging.info('The task will read from %s and write to: %s' % (fname, output))
+    fname = kwargs['ti'].xcom_pull(
+        key='prefixes_location', task_ids='get_prefixes')
+    output = generate_fname(
+        suffix='objects.csv', base_dir=kwargs['base_dir'], execution_date=kwargs['execution_date'].strftime('%Y-%m-%dT%H-%M'))
+
+    logging.info(f'The task will read from {fname} and write to: {output}')
 
     with open(fname, 'r') as f:
         with open(output, 'w+') as out:
             for prefix in f:
-                objects, _ = get_object_list(bucket_name=FETCHES_BUCKET, prefix=prefix)
+                objects, _ = get_object_list(
+                    bucket_name=FETCHES_BUCKET, prefix=prefix)
                 for obj in objects:
                     out.write(serialize_object(obj))
 
@@ -50,8 +43,9 @@ def generate_objects(**kwargs):
 
 
 def add_to_database(**kwargs):
-    objs = kwargs['ti'].xcom_pull(key='object_location', task_ids='generate_object_list')
-    logging.info('Processing object list from %s' % objs)
+    objs = kwargs['ti'].xcom_pull(
+        key='object_location', task_ids='generate_object_list')
+    logging.info(f'Processing object list from {objs}')
     with open(objs, 'r') as f:
         wl = read_object_list(f)
 
@@ -60,29 +54,17 @@ def add_to_database(**kwargs):
     # filtered = list(filter_objects(all_objects=wl, start_date=previous_run, end_date=execution_date))
     filtered = list(wl)
 
-    engine = get_engine()
-    station_dao = StationMetaCoreDAO(engine=engine)
-    mes_dao = MeasurementDAO(engine=engine)
-    station_dao.create_table()
-
+    station_dao, series_dao, mes_dao = setup_daos()
     records = 0
 
     for obj in filtered:
         for record in get_jsons_from_object(bucket=FETCHES_BUCKET, object_name=obj['Name']):
             station, measurement, _ = split_record(record)
-
-            stat_id = station_dao.store_from_json(station)
-
-            mes_dao.store(station_id=stat_id, parameter=measurement['parameter'],
-                          value=measurement['value'], unit=measurement['unit'],
-                          averagingPeriod=measurement['averagingPeriod'],
-                          date=measurement['date']['utc'])
-
+            add_to_db(station_dao=station_dao, series_dao=series_dao,
+                      mes_dao=mes_dao, station=station, measurement=measurement)
             records += 1
 
-    logging.info('%d stations stored in db', len(station_dao.get_all()))
-    logging.info('%d measurements stored in db', len(mes_dao.get_all()))
-    logging.info('%d valid records processed', records)
+    print_db_stats(station_dao, series_dao, mes_dao)
 
 
 default_args = {
@@ -97,7 +79,8 @@ op_kwargs = {
     'prefix': 'test-realtime/',
 }
 
-dag = DAG('get-aqdata', default_args=default_args, schedule_interval=timedelta(days=1))
+dag = DAG('get-aqdata', default_args=default_args,
+          schedule_interval=timedelta(days=1))
 
 get_prefixes_task = PythonOperator(task_id='get_prefixes', python_callable=get_prefixes,
                                    op_kwargs=op_kwargs, dag=dag)
