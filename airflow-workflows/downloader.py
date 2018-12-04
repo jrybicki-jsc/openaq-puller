@@ -20,15 +20,21 @@ def get_prefix(**kwargs):
     if prefix_pattern is None:
         logging.warning(
             'No prefix pattern provided (use prefix_pattern variable)')
-        prefix_pattern = 'test-realtime-gzip/$date/'
-    return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d'))
+        prefix_pattern = 'realtime-gzipped/$date/'
+    return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d')).strip()
 
 
 def generate_object_list(*args, **kwargs):
     prefix = get_prefix(**kwargs)
     logging.info(f'Will be getting objects for {prefix}')
     pfl = get_file_list(prefix=prefix, **kwargs)
+    logging.info('Updating....')
     pfl.update()
+    logging.info(f'we got: {len(pfl.get_list())}')
+
+    ll = pfl.retrieve()
+    logging.info(f'2. got: {len(ll)}')
+
     pfl.store()
 
 
@@ -60,8 +66,8 @@ def download_and_store(**kwargs):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2017, 9, 27),
-    'end_date': datetime(2017, 9, 29),
+    'start_date': datetime(2013, 11, 26),
+    'end_date': datetime(2013, 11, 28),
     'provide_context': True,
     'catchup': True
 }
