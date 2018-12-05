@@ -1,0 +1,43 @@
+{% extends 'admin/master.html' %}
+{% import 'admin/lib.html' as lib with context %}
+{% import 'admin/static.html' as admin_static with context%}
+{% import 'admin/model/layout.html' as model_layout with context %}
+
+{% block head %}
+    {{ super() }}
+    {{ lib.form_css() }}
+{% endblock %}
+
+{% block body %}
+    <h2>Stations</h2>
+    {% block model_menu_bar %}
+    {% endblock %}
+
+    {% block model_list_table %}
+    <table class="table table-striped table-bordered table-hover model-list">
+        <thead>
+            <tr>
+                <th class="column-header">Station</th>
+                <th class="column-header">Country</th>
+                <th class="column-header">State</th>
+                <th class="column-header">Series</th>
+            </tr>
+        </thead>
+        {% for row in stations %}
+            <tr>
+                <td><a href={{ url_for(".series" , station_name=row.station_id) }}>{{ row.station_id }}</a></td>
+                <td>{{ row.country }}</td>
+                <td>{{ row.state }}</td>
+                <td>{{ row.series }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% endblock %}
+
+{% endblock %}
+
+{% block tail %}
+    {{ super() }}
+    <script src="{{ admin_static.url(filename='admin/js/filters.js') }}"></script>
+    {{ lib.form_js() }}
+{% endblock %}

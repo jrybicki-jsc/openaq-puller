@@ -26,3 +26,8 @@ class MeasurementDAO(object):
     def get_all(self):
         s = select([meseaurement])
         return self.engine.execute(s).fetchall()
+
+    def get_all_for_series(self, series_id, limit=100):
+        s = select([meseaurement]).where(series_id == meseaurement.c.series_id).order_by(meseaurement.c.date.desc()).limit(limit)
+        res = self.engine.execute(s)
+        return res.fetchall()

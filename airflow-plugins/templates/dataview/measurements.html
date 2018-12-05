@@ -1,0 +1,86 @@
+{% extends 'admin/master.html' %}
+{% import 'admin/lib.html' as lib with context %}
+{% import 'admin/static.html' as admin_static with context%}
+{% import 'admin/model/layout.html' as model_layout with context %}
+
+{% block head %}
+    {{ super() }}
+    {{ lib.form_css() }}
+{% endblock %}
+
+{% block head_css %}
+{{ super() }}
+<link rel="stylesheet" type="text/css"
+    href="{{ url_for('static', filename='tree.css') }}">
+<link href="{{ admin_static.url(filename='vendor/bootstrap-daterangepicker/daterangepicker-bs2.css') }}" rel="stylesheet">
+<link rel="stylesheet" type="text/css"
+      href="{{ url_for("static", filename="dataTables.bootstrap.css") }}">
+<link rel="stylesheet" type="text/css"
+      href="{{ url_for("static", filename="nv.d3.css") }}">
+<script src="{{ url_for('static', filename='d3.v3.min.js') }}"></script>
+<script src="{{ url_for('static', filename='nv.d3.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+    <h2>Measurements in series {{ series_id }}</h2>
+    {% block model_menu_bar %}
+    {% endblock %}
+
+    <div id="chart">
+            <svg style="height: 400px"></svg>
+    </div>
+
+    {% block model_list_table %}
+    <table class="table table-striped table-bordered table-hover model-list">
+        <thead>
+            <tr>
+                <th class="column-header">Time</th>
+                <th class="column-header">Value</th>
+            </tr>
+        </thead>
+        {% for record in measurements %}
+            <tr>
+                <td>{{ record.date }}</td>
+                <td>{{ record.value }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% endblock %}
+
+
+
+
+      <script>
+          var data = [{ values: {{ measurements|safe }}, key: '{{ parameter }}'}];
+
+          nv.addGraph(function() {
+            var chart = nv.models.lineChart().x(function(d) { return Date.parse(d.date.trim()) }).y(function(d) { return d.value; });
+            chart.margin({top: 30, right: 160, bottom: 20, left: 160});
+
+
+            var datum = data;
+
+            chart.xAxis.axisLabel('Time').tickFormat(function(d) { return d3.time.format('%d %b %Y %H:%M')(new Date(d)); })
+            chart.yAxis.axisLabel('{{ parameter }} [{{ unit }}]').tickFormat(d3.format('.02f'));
+            chart.showLegend(true);
+
+    d3.select('#chart svg')
+        .datum(datum)
+        .transition().duration(500)
+        .attr('width', 1200)
+        .attr('height', 660)
+        .call(chart);
+
+    nv.utils.windowResize(chart.update);
+        });
+      </script>
+
+{% endblock %}
+
+
+
+{% block tail %}
+    {{ super() }}
+    <script src="{{ admin_static.url(filename='admin/js/filters.js') }}"></script>
+    {{ lib.form_js() }}
+{% endblock %}

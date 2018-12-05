@@ -1,0 +1,47 @@
+{% extends 'admin/master.html' %}
+{% import 'admin/lib.html' as lib with context %}
+{% import 'admin/static.html' as admin_static with context%}
+{% import 'admin/model/layout.html' as model_layout with context %}
+
+{% block head %}
+    {{ super() }}
+    {{ lib.form_css() }}
+{% endblock %}
+
+{% block body %}
+    <h2>Series for {{ station_name }}</h2>
+    {% block model_menu_bar %}
+    {% endblock %}
+
+    {% block model_list_table %}
+
+    <table class="table table-striped table-bordered table-hover model-list">
+        <thead>
+            <tr>
+                <th class="column-header">Parameter</th>
+                <th class="column-header">Unit</th>
+                <th class="column-header">Averaging Period</th>
+                <th class="column-header">Count</th>
+            </tr>
+        </thead>
+        {% for row in series %}
+            <tr>
+                <td><a href={{ url_for(".measurements" , series_id=row.id) }}>{{ row.parameter }}</a></td>
+                <td>{{ row.unit }}</td>
+                <td>{{ row.averagingPeriod }}</td>
+                <td>{{ row.count }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% endblock %}
+
+
+{% endblock %}
+
+
+
+{% block tail %}
+    {{ super() }}
+    <script src="{{ admin_static.url(filename='admin/js/filters.js') }}"></script>
+    {{ lib.form_js() }}
+{% endblock %}

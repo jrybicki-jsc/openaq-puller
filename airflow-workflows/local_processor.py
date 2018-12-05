@@ -9,9 +9,7 @@ from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mys3utils.tools import get_jsons_from_stream, split_record
 
-from prefix_oriented import add_to_db, setup_daos, print_db_stats
-
-from localutils import get_prefix_from_template as get_prefix
+from localutils import get_prefix_from_template as get_prefix, add_to_db, setup_daos, print_db_stats
 
 def go_through(**kwargs):
     prefix = get_prefix(**kwargs)
@@ -37,7 +35,7 @@ default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'start_date': datetime(2013, 11, 26),
-    'end_date': datetime(2013, 11, 28),
+    'end_date': datetime(2013, 12, 28),
     'provide_context': True,
     'catchup': True
 }

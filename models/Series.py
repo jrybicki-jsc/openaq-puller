@@ -39,6 +39,16 @@ class SeriesDAO(object):
         res = self.engine.execute(s)
         return res.first()
 
+    def get_for_id(self, series_id):
+        s = select([timeseries]).where(series_id == timeseries.c.id)
+        res = self.engine.execute(s)
+        return res.first()
+
+    def get_all_for_station(self, station_id):
+        s = select([timeseries]).where(station_id == timeseries.c.station_id)
+        res = self.engine.execute(s)
+        return res.fetchall()
+
     def get_all(self):
         s = select([timeseries])
         return self.engine.execute(s).fetchall()

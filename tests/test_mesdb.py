@@ -203,3 +203,34 @@ def test_store_unique_series():
     result = dao.get_all()
     assert len(result) == 1
     dao.drop_table()
+
+
+def test_get_forstation():
+    smdao, dao, mdao = __get__daos()
+
+    with open('./tests/series.ndjson', 'rb') as f:
+        ll = list(get_jsons_from_stream(stream=f, object_name='series.ndjson'))
+        assert len(ll) == 15
+
+    for rec in ll:
+        _, measurement, _ = split_record(rec)
+        station_id = smdao.store_from_json(rec)
+        series_id = dao.store(station_id=station_id, 
+            parameter = measurement['parameter'],
+            unit=measurement['unit'],
+            averagingPeriod=f"{measurement['averagingPeriod']}")
+        
+        mes_id = mdao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
+    mes = mdao.get_all()
+    assert len(mes) == 15
+
+    only_one = dao.get_all_for_station(station_id="Nisekh")
+    assert len(only_one) == 1
+
+    more_than_one = dao.get_all_for_station(station_id="Sankt Eriksgatan")
+    assert len(more_than_one) == 3
+
+    my_series = dao.get_for_id(series_id=1)
+    assert my_series[2] == 'pm10'
+
+    __clean_daos(smdao, dao, mdao)

@@ -7,16 +7,18 @@ class MainView(BaseView):
 
     @expose('/')
     def test(self):
-        pg = PostgresHook(postgres_conn_id='file_list_db')
-        query = '''SELECT date, prefix, count(name) as objects, sum(size) as size
-                   FROM prefix_checks, object 
-                   WHERE prefix_checks.id = object.prefix_check 
-                   GROUP BY prefix_checks.id'''
-        data = list()
-        for date, prefix, objects, size in pg.get_records(query):
-            data.append({'date': date, 'prefix': prefix, 'objects': objects, 'size': size})
-    
-
+        try:
+            pg = PostgresHook(postgres_conn_id='file_list_db')
+            query = '''SELECT date, prefix, count(name) as objects, sum(size) as size
+                    FROM prefix_checks, object 
+                    WHERE prefix_checks.id = object.prefix_check 
+                    GROUP BY prefix_checks.id'''
+            data = list()
+            for date, prefix, objects, size in pg.get_records(query):
+                data.append({'date': date, 'prefix': prefix, 'objects': objects, 'size': size})
+        except:
+            data.append({'date': "No", 'prefix': "Connection", 'objects': "To", 'size': "Database"})
+        
         return self.render('myplugin/main.html', data=data)
 
 admin_view = MainView(category='My Plugins', name='Prefix Checks')

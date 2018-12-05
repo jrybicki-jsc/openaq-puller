@@ -16,11 +16,13 @@ import types
 
 def get_prefix_from_template(**kwargs):
     date = kwargs['execution_date']
-    prefix_pattern = Variable.get('prefix_pattern')
-    if prefix_pattern is None:
+    try:
+        prefix_pattern = Variable.get('prefix_pattern')
+    except:
         logging.warning(
             'No prefix pattern provided (use prefix_pattern variable)')
         prefix_pattern = 'test-realtime-gzip/$date/'
+    
     return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d')).strip()
 
 def generate_fname(suffix, base_dir, execution_date):
@@ -36,7 +38,7 @@ def add_to_db(station_dao, series_dao, mes_dao, station, measurement):
     series_id = series_dao.store(station_id=stat_id,
                   parameter=measurement['parameter'],
                   unit=measurement['unit'],
-                  averagingPeriod=f"measurement['averagingPeriod']")
+                  averagingPeriod=f"{ measurement['averagingPeriod']} ")
 
     mes_dao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
 
@@ -64,7 +66,12 @@ def get_file_list(prefix, **kwargs):
     return fl
 
 def setup_daos():
-    pg = PostgresHook(postgres_conn_id='openaq-db')
+    try:
+        pg = PostgresHook(postgres_conn_id='openaq-db')    
+    except:
+        logging.error('remote database not defined. Use [openaq-db] connection')
+        return None
+
     wrapper = types.SimpleNamespace()
     wrapper.get_engine = pg.get_sqlalchemy_engine
     station_dao = StationMetaCoreDAO(engine=wrapper)
