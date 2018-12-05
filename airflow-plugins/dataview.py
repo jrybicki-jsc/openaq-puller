@@ -10,6 +10,8 @@ from models.StationMeta import StationMetaCoreDAO
 import types
 import logging
 
+import pandas as pd
+
 def setup_daos():
     try:
         pg = PostgresHook(postgres_conn_id='openaq-db')    
@@ -72,7 +74,14 @@ class DataView(BaseView):
                 'value': m[1]
             })
 
+        
         return ret[::-1], series
+
+    def get_rolling_mean(self, data):
+        myf = pd.DataFrame(data)
+        myf['value'] = myf.value.rolling(window=10).mean().fillna(0)
+        return myf[['date','value']].to_dict('records')
+        
 
     @expose('/')
     def stations(self):
@@ -87,7 +96,8 @@ class DataView(BaseView):
     @expose('/measurements/<int:series_id>')
     def measurements(self, series_id):
         measurements, series =self.get_data(series_id=series_id)
-        return self.render('dataview/measurements.html', series_id=series[1], parameter=series[2], unit=series[3], measurements=measurements)
+        rolling = self.get_rolling_mean(data = measurements)
+        return self.render('dataview/measurements.html', series_id=series[1], parameter=series[2], unit=series[3], measurements=measurements, rolling=rolling)
     
 
 

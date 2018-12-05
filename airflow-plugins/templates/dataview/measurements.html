@@ -51,12 +51,25 @@
 
 
       <script>
-          var data = [{ values: {{ measurements|safe }}, key: '{{ parameter }}'}];
+          var data = [
+              { 
+                  values: {{ measurements|safe }}, 
+                  key: '{{ parameter }}',
+                  color: '#ff7f0e'
+              },
+              {
+                  values: {{ rolling| safe}},
+                  key: 'rolling mean',
+                  color: '#2ca02c'
+              }              
+              ];
 
           nv.addGraph(function() {
-            var chart = nv.models.lineChart().x(function(d) { return Date.parse(d.date.trim()) }).y(function(d) { return d.value; });
+            var chart = nv.models.lineChart()
+                .x(function(d) { return Date.parse(d.date.trim()) })
+                .y(function(d) { return d.value; });
+            
             chart.margin({top: 30, right: 160, bottom: 20, left: 160});
-
 
             var datum = data;
 
