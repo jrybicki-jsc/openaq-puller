@@ -32,9 +32,10 @@ services:
             # - REDIS_PASSWORD=redispass
          volumes:
 #            - ./dags:/usr/local/airflow/dags
-            - ./airflow-workflows:/usr/local/airflow/dags
+            - ./airflow_workflows:/usr/local/airflow/dags
+
             # Uncomment to include custom plugins
-            - ./airflow-plugins:/usr/local/airflow/plugins
+            - ./airflow_plugins:/usr/local/airflow/plugins
          ports:
             - "8080:8080"
          command: webserver
@@ -66,7 +67,7 @@ services:
         depends_on:
             - webserver
         volumes:
-            - ./airflow-workflows:/usr/local/airflow/dags
+            - ./airflow_workflows:/usr/local/airflow/dags
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         environment:
@@ -88,7 +89,7 @@ services:
         depends_on:
             - scheduler
         volumes:
-            - ./airflow-workflows:/usr/local/airflow/dags
+            - ./airflow_workflows:/usr/local/airflow/dags
             # Uncomment to include custom plugins
             # - ./plugins:/usr/local/airflow/plugins
         #cpu: 4
