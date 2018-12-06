@@ -234,3 +234,4 @@ def test_get_forstation():
     assert my_series[2] == 'pm10'
 
     __clean_daos(smdao, dao, mdao)
+

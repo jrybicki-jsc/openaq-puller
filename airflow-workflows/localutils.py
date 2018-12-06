@@ -22,6 +22,13 @@ def get_prefix_from_template(**kwargs):
         logging.warning(
             'No prefix pattern provided (use prefix_pattern variable)')
         prefix_pattern = 'test-realtime-gzip/$date/'
+
+    if prefix_pattern.startswith('/'):
+        logging.warning('You probably dont want to start prefix with /')
+    
+    if '$date' not in prefix_pattern.index('$date'):
+        logging.warning('No date placeholder available (use $date). Using pattern as prefix')
+        return prefix_pattern
     
     return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d')).strip()
 

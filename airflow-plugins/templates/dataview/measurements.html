@@ -67,7 +67,8 @@
           nv.addGraph(function() {
             var chart = nv.models.lineChart()
                 .x(function(d) { return Date.parse(d.date.trim()) })
-                .y(function(d) { return d.value; });
+                .y(function(d) { return d.value; })
+                .reduceXTicks(True);
             
             chart.margin({top: 30, right: 160, bottom: 20, left: 160});
 
