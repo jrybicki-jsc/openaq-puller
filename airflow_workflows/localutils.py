@@ -26,7 +26,7 @@ def get_prefix_from_template(**kwargs):
     if prefix_pattern.startswith('/'):
         logging.warning('You probably dont want to start prefix with /')
     
-    if '$date' not in prefix_pattern.index('$date'):
+    if '$date' not in prefix_pattern:
         logging.warning('No date placeholder available (use $date). Using pattern as prefix')
         return prefix_pattern
     

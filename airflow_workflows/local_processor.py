@@ -42,7 +42,7 @@ default_args = {
 
 # the task is to be run after the download workflow
 
-dag = DAG(dag_id='local_processor', default_args=default_args,
+dag = DAG(dag_id='local-processor', default_args=default_args,
           schedule_interval='@daily')
 with dag:
     go_through_files = PythonOperator(task_id='go_through_files',
