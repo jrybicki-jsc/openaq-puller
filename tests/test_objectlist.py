@@ -4,6 +4,8 @@ from mys3utils.object_list import FileBasedObjectList
 from datetime import date
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
+import unittest
+
 
 mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'LastModified': datetime(2018, 7, 21, 0, 3, 48, tzinfo=timezone.utc),
@@ -31,26 +33,30 @@ mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'Size': 4599735,
            'StorageClass': 'STANDARD'}, ]
 
+class TestObjList(unittest.TestCase):
+    def setUp(self):
+        pass
 
-def test_load():
-    kwargs = dict()
-    kwargs['base_dir'] = './tests/'
-    pfl = FileBasedObjectList(prefix='test', execution_date=date(2018, 6, 14), **kwargs)
-    pfl.load()
-    assert len(pfl.get_list()) == 91
+    def test_load(self):
+        kwargs = dict()
+        kwargs['base_dir'] = './tests/'
+        pfl = FileBasedObjectList(prefix='test', execution_date=date(2018, 6, 14), **kwargs)
+        pfl.load()
+        self.assertEqual(91, len(pfl.get_list()))
 
 
-def test_fetch():
-    kwargs = dict()
+    def test_fetch(self):
+        kwargs = dict()
 
-    kwargs['base_dir'] = './tests/'
-    shutil.rmtree('./tests/2018-07-21/')
-    pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-    pfl.retrieve = MagicMock(return_value=mylist)
-    pfl.load()
-    pfl.store()
-    assert len(pfl.get_list()) == 5
+        kwargs['base_dir'] = './tests/'
+        shutil.rmtree('./tests/2018-07-21/')
+        pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+        pfl.retrieve = MagicMock(return_value=mylist)
+        pfl.load()
+        pfl.store()
+        self.assertEqual(5, len(pfl.get_list()))
 
-    pfl2 = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-    pfl2.load()
-    assert len(pfl.get_list()) == len(pfl2.get_list()) == 5
+        pfl2 = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+        pfl2.load()
+        self.assertEqual(5, len(pfl.get_list()))
+        self.assertEqual(5, len(pfl2.get_list()))

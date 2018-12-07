@@ -1,7 +1,8 @@
-from datetime import date
-from mys3utils.DBFileList import DBBasedObjectList, get_engine
+import unittest
+from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
-from datetime import datetime, timezone
+
+from mys3utils.DBFileList import DBBasedObjectList, get_engine
 
 mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'LastModified': datetime(2018, 7, 21, 0, 3, 48, tzinfo=timezone.utc),
@@ -30,37 +31,38 @@ mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'StorageClass': 'STANDARD'}, ]
 
 
-def test_load():
-    kwargs = dict()
-    kwargs['engine'] = get_engine()
+class TestDBList(unittest.TestCase):
 
-    pfl = DBBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-    pfl.retrieve = MagicMock(return_value=mylist)
-    pfl.load()
-    pfl.store()
-    assert len(pfl.get_list()) == 5
-    pfl.retrieve.assert_called_once()
+    def test_load(self):
+        kwargs = dict()
+        kwargs['engine'] = get_engine()
 
-    pfl.retrieve = MagicMock(return_value=[])
-    pfl.load()
-    pfl.retrieve.assert_not_called()
-    assert len(pfl.get_list()) == 5
+        pfl = DBBasedObjectList(
+            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+        pfl.retrieve = MagicMock(return_value=mylist)
+        pfl.load()
+        pfl.store()
+        self.assertEqual(len(pfl.get_list()), 5)
+        pfl.retrieve.assert_called_once()
 
+        pfl.retrieve = MagicMock(return_value=[])
+        pfl.load()
+        pfl.retrieve.assert_not_called()
+        self.assertEqual(5, len(pfl.get_list()))
 
+    def test_load2(self):
+        kwargs = dict()
+        kwargs['engine'] = get_engine()
 
-def test_load2():
-    kwargs = dict()
-    kwargs['engine'] = get_engine()
+        pfl = DBBasedObjectList(
+            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+        pfl.retrieve = MagicMock(return_value=mylist)
+        pfl.load()
+        pfl.store()
+        pfl.store()
+        pfl.store()
 
-    pfl = DBBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-    pfl.retrieve = MagicMock(return_value=mylist)
-    pfl.load()
-    pfl.store()
-    pfl.store()
-    pfl.store()
+        pfl.load()
 
-    pfl.load()
-
-    assert len(pfl.get_list()) == 5
-    pfl.retrieve.assert_called_once()
-
+        self.assertEqual(5, len(pfl.get_list()))
+        pfl.retrieve.assert_called_once()
