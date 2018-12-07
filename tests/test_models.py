@@ -1,9 +1,9 @@
 import json
-
 import os
 
-from models.StationMeta import StationMetaCoreDAO, MyEngine
+from models.StationMeta import MyEngine, StationMetaCoreDAO
 from mys3utils.tools import split_record
+import unittest
 
 jseg = '{"date":{"utc":"2018-06-07T00:00:00.000Z","local":"2018-06-06T20:00:00-04:00"},' \
        '"parameter":"co",' \
@@ -21,93 +21,83 @@ jseg = '{"date":{"utc":"2018-06-07T00:00:00.000Z","local":"2018-06-06T20:00:00-0
        '"mobile":false}'
 
 
-def __get_engine():
-    # host empty is memory storage
-    host = os.getenv('DB_HOST', '')
-    dbname = os.getenv('DB_TEST_DATABASE', 'openaq')
-    user = os.getenv('DB_USER', 'postgres')
-    password = os.getenv('DB_PASS', 'mysecretpassword')
-    engine = MyEngine(host=host, dbname=dbname, user=user, password=password)
+class TestModels(unittest.TestCase):
 
-    return engine
+    def setUp(self):
+        # host empty is memory storage
+        host = os.getenv('DB_HOST', '')
+        dbname = os.getenv('DB_TEST_DATABASE', 'openaq')
+        user = os.getenv('DB_USER', 'postgres')
+        password = os.getenv('DB_PASS', 'mysecretpassword')
+        self.engine = MyEngine(host=host, dbname=dbname, user=user, password=password)
 
+        self.dao = StationMetaCoreDAO(self.engine)
+        self.dao.drop_table()
+        self.dao.create_table()
 
-def test_store_intodb():
-    # host empty is memory storage
-    engine = __get_engine()
-    dao = StationMetaCoreDAO(engine)
-    dao.drop_table()
-    dao.create_table()
-
-    asj = json.loads(jseg)
-    res = dao.store_from_json(asj)
-    assert res is not None
-    assert res == "La Florida"
-
-    result = dao.get_all()
-    assert len(result) == 1
-    dao.drop_table()
+    def tearDown(self):
+        self.dao.drop_table()
 
 
-def test_store_unique():
-    engine = __get_engine()
-    dao = StationMetaCoreDAO(engine)
-    dao.create_table()
+    def test_store_intodb(self):
+        asj = json.loads(jseg)
+        res = self.dao.store_from_json(asj)
+        self.assertIsNotNone(res)
+        self.assertEqual(res, "La Florida")
 
-    asj = json.loads(jseg)
-    id1 = dao.store_from_json(asj)
-    assert id1 is not None
-
-    id2 = dao.store_from_json(asj)
-    print('{} == {}'.format(id1, id2))
-    assert id2 is not None
-    assert id2 == id1
-
-    result = dao.get_all()
-    assert len(result) == 1
-    dao.drop_table()
+        result = self.dao.get_all()
+        self.assertEqual(1, len(result))
 
 
-def test_split_record():
-    rec = """{"date":{"utc":"2018-06-06T23:00:00.000Z","local":"2018-06-07T05:00:00+06:00"},
-           "parameter":"pm25",
-           "location":"US Diplomatic Post: Dhaka",
-           "value":27,
-           "unit":"µg/m³",
-           "city":"Dhaka",
-           "attribution":[{"name":"EPA AirNow DOS","url":"http://airnow.gov/index.cfm?action=airnow.global_summary"}],
-           "averagingPeriod":{"value":1,"unit":"hours"},
-           "coordinates":{"latitude":23.796373,"longitude":90.424614},
-           "country":"BD",
-           "sourceName":"StateAir_Dhaka",
-           "sourceType":"government",
-           "mobile":false}"""
-    jl = json.loads(rec)
+    def test_store_unique(self):
+        asj = json.loads(jseg)
+        id1 = self.dao.store_from_json(asj)
+        self.assertIsNotNone(id1)
 
-    station, measurement, ext = split_record(jl)
-    assert 'location' in station
-    assert 'value' in measurement
-    assert 'location' not in measurement
-    assert 'city' in station
-    assert 'city' not in ext
-    assert 'location' not in ext
-    assert 'attribution' in ext
+        id2 = self.dao.store_from_json(asj)
+        print('{} == {}'.format(id1, id2))
+        self.assertIsNotNone(id2)
+
+        result = self.dao.get_all()
+        
+        self.assertEqual(1, len(result))
+        
+
+    def test_split_record(self):
+        rec = """{"date":{"utc":"2018-06-06T23:00:00.000Z","local":"2018-06-07T05:00:00+06:00"},
+            "parameter":"pm25",
+            "location":"US Diplomatic Post: Dhaka",
+            "value":27,
+            "unit":"µg/m³",
+            "city":"Dhaka",
+            "attribution":[{"name":"EPA AirNow DOS","url":"http://airnow.gov/index.cfm?action=airnow.global_summary"}],
+            "averagingPeriod":{"value":1,"unit":"hours"},
+            "coordinates":{"latitude":23.796373,"longitude":90.424614},
+            "country":"BD",
+            "sourceName":"StateAir_Dhaka",
+            "sourceType":"government",
+            "mobile":false}"""
+        jl = json.loads(rec)
+
+        station, measurement, ext = split_record(jl)
+        assert 'location' in station
+        assert 'value' in measurement
+        assert 'location' not in measurement
+        assert 'city' in station
+        assert 'city' not in ext
+        assert 'location' not in ext
+        assert 'attribution' in ext
 
 
-def test_get_for_name():
-    engine = __get_engine()
-    dao = StationMetaCoreDAO(engine)
-    dao.create_table()
+    def test_get_for_name(self):
+        
+        asj = json.loads(jseg)
+        self.dao.store_from_json(asj)
 
-    asj = json.loads(jseg)
-    dao.store_from_json(asj)
+        res = self.dao.get_for_name(station_name='foo')
+        self.assertIsNone(res)
 
-    res = dao.get_for_name(station_name='foo')
-    assert res is None
-
-    res = dao.get_for_name(station_name="La Florida")
-    assert res is not None
-    assert res[0] == "La Florida"
-    dao.drop_table()
-
+        res = self.dao.get_for_name(station_name="La Florida")
+        self.assertIsNotNone(res)
+        self.assertEqual(res[0], "La Florida")
 

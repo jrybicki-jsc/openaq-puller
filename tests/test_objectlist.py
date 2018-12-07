@@ -1,11 +1,9 @@
 import shutil
+import unittest
+from datetime import date, datetime, timezone
+from unittest.mock import MagicMock
 
 from mys3utils.object_list import FileBasedObjectList
-from datetime import date
-from unittest.mock import MagicMock
-from datetime import datetime, timezone
-import unittest
-
 
 mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'LastModified': datetime(2018, 7, 21, 0, 3, 48, tzinfo=timezone.utc),
@@ -33,6 +31,7 @@ mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'Size': 4599735,
            'StorageClass': 'STANDARD'}, ]
 
+
 class TestObjList(unittest.TestCase):
     def setUp(self):
         pass
@@ -40,23 +39,25 @@ class TestObjList(unittest.TestCase):
     def test_load(self):
         kwargs = dict()
         kwargs['base_dir'] = './tests/'
-        pfl = FileBasedObjectList(prefix='test', execution_date=date(2018, 6, 14), **kwargs)
+        pfl = FileBasedObjectList(
+            prefix='test', execution_date=date(2018, 6, 14), **kwargs)
         pfl.load()
         self.assertEqual(91, len(pfl.get_list()))
-
 
     def test_fetch(self):
         kwargs = dict()
 
         kwargs['base_dir'] = './tests/'
         shutil.rmtree('./tests/2018-07-21/')
-        pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+        pfl = FileBasedObjectList(
+            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
         pfl.retrieve = MagicMock(return_value=mylist)
         pfl.load()
         pfl.store()
         self.assertEqual(5, len(pfl.get_list()))
 
-        pfl2 = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+        pfl2 = FileBasedObjectList(
+            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
         pfl2.load()
         self.assertEqual(5, len(pfl.get_list()))
         self.assertEqual(5, len(pfl2.get_list()))
