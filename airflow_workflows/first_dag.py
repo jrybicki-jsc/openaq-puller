@@ -17,12 +17,12 @@ default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'start_date': datetime(2017, 1, 1),
-    'end_date': datetime(2017, 1, 2),
+    #'end_date': datetime(2017, 1, 2),
     'provide_context': True,
     'catchup': True
 }
 
-dag = DAG(dag_id='the-first', default_args=default_args, schedule_interval='@daily')
+dag = DAG(dag_id='the-first', default_args=default_args, schedule_interval='@once')
 
 with dag:
     print_date_task = BashOperator(task_id='print_date', bash_command='date')
