@@ -116,7 +116,7 @@ def get_jsons_from_object(bucket, object_name, client=None):
         try:
             yield json.loads(line)
         except:
-            print('Unable to deserialize [%s]' % line)
+            print(f'Unable to deserialize [{line}]')
 
     
     body.close()
@@ -149,7 +149,10 @@ def split_record(record):
               "sourceType":"government", --> Provider
               "mobile":false} --> StationMetaProvider (catchAll for all that does not fit the station core)"""
 
-    if 'coordinates' not in record:
+    if ('coordinates' not in record):
+        record['coordinates'] = {'latitude': 0.0, 'longitude': 0.0}
+
+    if  record['coordinates'] is None:
         record['coordinates'] = {'latitude': 0.0, 'longitude': 0.0}
 
     if 'averagingPeriod' not in record:

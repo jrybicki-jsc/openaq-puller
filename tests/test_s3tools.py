@@ -2,7 +2,7 @@ import random
 import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, Mock
-
+import json
 from mys3utils.tools import (filter_objects, filter_prefixes,
                              get_jsons_from_object, get_jsons_from_stream,
                              get_object_list, read_object_list, split_record)
@@ -198,3 +198,15 @@ class TestS3Tools(unittest.TestCase):
             assert 'sourceName' in measurement
 
         f.close()
+
+    def test_split_single(self):
+        strr = '{"date":{"utc":"2015-12-10T01:00:00.000Z","local":"2015-12-10T08:00:00+07:00"},"parameter":"no2","location":"Pak Nam, Mueang","value":0.058,"unit":"ppm","city":"Samut Prakan","attribution":[{"name":"Pollution Control Department","url":"http://www.aqmthai.com/index.php"}],"averagingPeriod":{"value":1,"unit":"hours"},"coordinates":null,"country":"TH","sourceName":"Thailand"}'
+        asj = json.loads(strr)
+        print(f'got {asj}')
+        self.assertIsNotNone(asj)
+        station, measurement, ext = split_record(asj)
+        self.assertIn('coordinates', station)
+        self.assertEqual(station['coordinates']['latitude'], 0)
+
+    
+
