@@ -41,14 +41,16 @@ def generate_fname(suffix, base_dir, execution_date):
 
 
 def add_to_db(station_dao, series_dao, mes_dao, station, measurement):
-    stat_id = station_dao.store_from_json(station)
-    series_id = series_dao.store(station_id=stat_id,
+    try:
+        stat_id = station_dao.store_from_json(station)
+        series_id = series_dao.store(station_id=stat_id,
                   parameter=measurement['parameter'],
                   unit=measurement['unit'],
                   averagingPeriod=f"{ measurement['averagingPeriod']} ")
 
-    mes_dao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
-
+        mes_dao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
+    except:
+        logging.warning(f'Problem storing { station } { measurement }. Skipped')
 
 
 def local_process_file(object_name):
