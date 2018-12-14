@@ -80,11 +80,11 @@ RUN cd /mypack && pip install .
 
 COPY docker/script/entrypoint.sh /entrypoint.sh
 COPY docker/config/airflow.cfg ${AIRFLOW_HOME}/airflow.cfg
-
+RUN mkdir /usr/local/airflow/logs && chown -R airflow: /usr/local/airflow/logs/
+VOLUME /usr/local/airflow/logs/
 RUN chown -R airflow: ${AIRFLOW_HOME}
 
 EXPOSE 8080 5555 8793
-
 USER airflow
 WORKDIR ${AIRFLOW_HOME}
 ENTRYPOINT ["/entrypoint.sh"]
