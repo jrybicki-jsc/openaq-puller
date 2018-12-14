@@ -1,5 +1,8 @@
 from sqlalchemy import Table, MetaData, Column, Integer, String, Float, ForeignKey, Sequence, DateTime
 
+from sqlalchemy import event
+
+
 metadata = MetaData()
 
 stationmeta = Table('stationmetacore', metadata,

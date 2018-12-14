@@ -195,3 +195,19 @@ class TestMessDB(unittest.TestCase):
 
         self.assertEqual(my_series[2],'pm10')
 
+    def test_oversized(self):
+        st = {'location': 'SLAVONSKI BROD-1 - RH0109 - HR0010A; Državna mreža za trajno praćenje kvalitete zraka praćenje kvalitete zrakapraćenje kvalitete zrakapraćenje kvalitete zraka', 
+        'city': 'Državna mreža za trajno praćenje kvalitete zraka - RH01', 
+        'station_name': 'SLAVONSKI BROD-1 - RH0109 - HR0010A; Državna mreža za trajno praćenje kvalitete zraka', 
+        'coordinates': {'latitude': 45.15947222168539, 
+        'longitude': 17.995100000000004}, 
+        'station_altitude': 0, 'country': 'HR', 'station_state': ''}
+        idd = self.smdao.store_from_json(st)
+        print(f' {idd}')
+        self.assertEqual(len(idd), 64)
+
+ 
+    def test_oversized2(self):
+        idd = self.smdao.store(station_id='A'*513, station_name='N'*512, station_country='HR', station_location='loc', station_latitude=0.0, station_longitude=0.0, station_altitude=0.0, station_state='Rijeka')
+        self.assertEqual(len(idd), 64)
+

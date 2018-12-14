@@ -51,14 +51,14 @@ class StationMetaCoreDAO(object):
             return r[0]
 
         ins = stationmeta.insert().values(
-            station_id=station_id,
-            station_name=station_name,
-            station_location=station_location,
+            station_id=station_id[:64],
+            station_name=station_name[:128],
+            station_location=station_location[:128],
             station_latitude=station_latitude,
             station_longitude=station_longitude,
             station_altitude=station_altitude,
-            station_country=station_country,
-            station_state=station_state)
+            station_country=station_country[:128],
+            station_state=station_state[:128])
 
         res = self.engine.execute(ins)
         last_id = res.inserted_primary_key[0]
