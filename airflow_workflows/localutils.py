@@ -94,7 +94,7 @@ def setup_daos():
     return station_dao, series_dao, mes_dao
 
 def print_db_stats(station_dao, series_dao, mes_dao):
-    logging.info(f"{ len(station_dao.get_all())} stations stored in db")
-    logging.info(f"{ len(series_dao.get_all())} series stored in db")
-    logging.info(f"{ len(mes_dao.get_all())} measurements stored in db")
+    logging.info(f"{ station_dao.count()} stations stored in db")
+    logging.info(f"{ series_dao.count()} series stored in db")
+    logging.info(f"{ mes_dao.count()} measurements stored in db")
     

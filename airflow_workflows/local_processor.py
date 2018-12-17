@@ -30,6 +30,7 @@ def go_through(**kwargs):
                           measurement=measurement)
 
     print_db_stats(station_dao, series_dao, mes_dao)
+    return True
 
 default_args = {
     'owner': 'airflow',
