@@ -211,3 +211,26 @@ class TestMessDB(unittest.TestCase):
         idd = self.smdao.store(station_id='A'*513, station_name='N'*512, station_country='HR', station_location='loc', station_latitude=0.0, station_longitude=0.0, station_altitude=0.0, station_state='Rijeka')
         self.assertEqual(len(idd), 64)
 
+    def test_counter(self):
+        with open('./tests/series.ndjson', 'rb') as f:
+            ll = list(get_jsons_from_stream(stream=f, object_name='series.ndjson'))
+            self.assertEqual(15, len(ll))
+
+        for rec in ll:
+            _, measurement, _ = split_record(rec)
+            station_id = self.smdao.store_from_json(rec)
+            series_id = self.dao.store(station_id=station_id, 
+                parameter = measurement['parameter'],
+                unit=measurement['unit'],
+                averagingPeriod=f"{measurement['averagingPeriod']}")
+            
+            mes_id = self.mdao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
+        mes = self.mdao.get_all()
+        self.assertEqual(15, len(mes))
+        self.assertEqual(self.mdao.count(), 15)
+
+        self.assertEqual(4, self.smdao.count())
+        self.assertEqual(6, self.dao.count())
+
+
+

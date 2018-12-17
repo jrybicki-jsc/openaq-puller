@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, func
 
 from models import metadata, stationmeta
 
@@ -84,3 +84,8 @@ class StationMetaCoreDAO(object):
     def get_all(self):
         s = select([stationmeta])
         return self.engine.execute(s).fetchall()
+
+    def count(self):
+        s= select([func.count()]).select_from(stationmeta)
+        res = self.engine.execute(s)
+        return res.fetchone()[0]

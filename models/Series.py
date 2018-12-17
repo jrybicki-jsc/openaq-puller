@@ -1,5 +1,5 @@
 from models import timeseries, metadata
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from dateutil import parser
 
 
@@ -52,3 +52,8 @@ class SeriesDAO(object):
     def get_all(self):
         s = select([timeseries])
         return self.engine.execute(s).fetchall()
+
+    def count(self):
+        s= select([func.count()]).select_from(timeseries)
+        res = self.engine.execute(s)
+        return res.fetchone()[0]

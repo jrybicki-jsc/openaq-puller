@@ -1,5 +1,5 @@
 from models import meseaurement, metadata
-from sqlalchemy import select
+from sqlalchemy import select, func
 from dateutil import parser
 
 
@@ -31,3 +31,8 @@ class MeasurementDAO(object):
         s = select([meseaurement]).where(series_id == meseaurement.c.series_id).order_by(meseaurement.c.date.desc()).limit(limit)
         res = self.engine.execute(s)
         return res.fetchall()
+
+    def count(self):
+        s= select([func.count()]).select_from(meseaurement)
+        res = self.engine.execute(s)
+        return res.fetchone()[0]
