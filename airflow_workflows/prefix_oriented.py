@@ -30,7 +30,6 @@ def generate_object_list(**kwargs):
     pfl = setup_objectlist(**kwargs)
     logging.info(f"Retrieving object names for prefix: { pfl.get_prefix() }")
     pfl.update()
-    pfl.store()
 
 def transform_objects(**kwargs):
     pfl = setup_objectlist(**kwargs)

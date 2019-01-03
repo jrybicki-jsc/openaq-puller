@@ -66,7 +66,7 @@ class DBBasedObjectList(ObjectList):
         if self.check_id is None:
                 logging.info('No such check. Refreshing')
                 self.check_id = self.create_check()
-                self.objects = self.retrieve()
+                self.objects = self._retrieve()
         else:
             s = select([objects]).where(self.check_id == objects.c.prefix_check)
             all = self.engine.execute(s).fetchall()
@@ -74,8 +74,8 @@ class DBBasedObjectList(ObjectList):
             for r in all:
                 self.objects.append({'Name': r[1], 'Size': int(r[2]), 'ETag': r[3], 'LastModified': r[4]})
 
-    def store(self):
-        logging.info('Storing %d objects in %s', len(self.objects), 'dbname')
+    def _store(self):
+        logging.info(f'Storing { len (self.objects) } objects in database')
         if self.check_id is None:
             self.check_id = self.get_check()
 
@@ -90,7 +90,7 @@ class DBBasedObjectList(ObjectList):
         for o in self.objects:
             ins = objects.insert().values(
                 prefix_check=self.check_id,
-                name=o['Key'],
+                name=o['Name'],
                 size=o['Size'],
                 checksum=o['ETag'],
                 created=o['LastModified'])
@@ -100,3 +100,10 @@ class DBBasedObjectList(ObjectList):
 
 def get_engine():
     return create_engine('sqlite:///:memory:', echo=True)
+
+def drop_all(engine):
+    for tbl in reversed(metadata.sorted_tables):
+        try:
+            engine.execute(tbl.delete())
+        except:
+            logging.info(f'Problem with deleting: { tbl }')

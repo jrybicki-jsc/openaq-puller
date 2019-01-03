@@ -36,6 +36,10 @@ class TestObjList(unittest.TestCase):
     def setUp(self):
         pass
 
+    def tearDown(self):
+        shutil.rmtree('./tests/2018-07-21/', ignore_errors=True, onerror=None)
+
+
     def test_load(self):
         kwargs = dict()
         kwargs['base_dir'] = './tests/'
@@ -45,19 +49,67 @@ class TestObjList(unittest.TestCase):
         self.assertEqual(91, len(pfl.get_list()))
 
     def test_fetch(self):
-        kwargs = dict()
-
-        kwargs['base_dir'] = './tests/'
-        shutil.rmtree('./tests/2018-07-21/')
         pfl = FileBasedObjectList(
-            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-        pfl.retrieve = MagicMock(return_value=mylist)
+            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
+        pfl._retrieve = MagicMock(return_value=mylist)
         pfl.load()
-        pfl.store()
         self.assertEqual(5, len(pfl.get_list()))
 
         pfl2 = FileBasedObjectList(
-            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
+            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
         pfl2.load()
         self.assertEqual(5, len(pfl.get_list()))
         self.assertEqual(5, len(pfl2.get_list()))
+
+    def test_multiple_loads(self):
+        pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
+        pfl._retrieve = MagicMock(return_value=mylist)
+        
+        pfl.load()
+        pfl._retrieve.assert_called_once()
+        
+        self.assertEqual(5, len(pfl.get_list()))
+
+        pfl.load()
+        self.assertEqual(5, len(pfl.get_list()))
+
+    def test_multiple_stores(self):
+        pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
+        pfl._retrieve = MagicMock(return_value=mylist.copy())
+        
+        pfl.update()
+        pfl._retrieve.assert_called_once()
+        
+        self.assertEqual(5, len(pfl.get_list()))
+
+        pfl.update()
+        pfl.update()
+        pfl.update()
+        pfl.update()
+        
+
+
+    def test_namings(self):
+        pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
+        pfl._retrieve = MagicMock(return_value=mylist)
+        
+        pfl.load()
+        self.assertEqual(5, len(pfl.get_list()))
+        pfl.load()
+
+        for rec in pfl.get_list():
+            self.assertIn('Name', rec)
+
+
+        shutil.rmtree('./tests/2018-07-21/', ignore_errors=True, onerror=None)
+        p2 = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
+        p2._retrieve = MagicMock(return_value=mylist)
+        p2.load()
+        self.assertEqual(5, len(p2.get_list()))
+        for rec in p2.get_list():
+            self.assertIn('Name', rec)
+
+
+
+
+

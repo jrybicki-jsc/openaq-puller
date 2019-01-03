@@ -1,8 +1,9 @@
 import unittest
 from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
+import logging
 
-from mys3utils.DBFileList import DBBasedObjectList, get_engine
+from mys3utils.DBFileList import DBBasedObjectList, get_engine, drop_all
 
 mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
            'LastModified': datetime(2018, 7, 21, 0, 3, 48, tzinfo=timezone.utc),
@@ -33,36 +34,42 @@ mylist = [{'Key': 'realtime/2018-07-21/1532131426.ndjson',
 
 class TestDBList(unittest.TestCase):
 
+    def tearDown(self):
+        engine = get_engine()
+        drop_all(engine)
+
+
     def test_load(self):
         kwargs = dict()
         kwargs['engine'] = get_engine()
 
         pfl = DBBasedObjectList(
-            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-        pfl.retrieve = MagicMock(return_value=mylist)
-        pfl.load()
-        pfl.store()
-        self.assertEqual(len(pfl.get_list()), 5)
-        pfl.retrieve.assert_called_once()
+            prefix='realtime/2018-07-21/', execution_date=datetime(2018, 7, 21), **kwargs)
+        pfl._retrieve = MagicMock(return_value=mylist.copy())
+        pfl.update()
 
-        pfl.retrieve = MagicMock(return_value=[])
+        self.assertEqual(len(pfl.get_list()), 5)
+        pfl._retrieve.assert_called_once()
+
+        pfl = DBBasedObjectList(
+            prefix='realtime/2018-07-21/', execution_date=datetime(2018, 7, 21), **kwargs)
+
+        logging.info('This is the new test!')
+        pfl._retrieve = MagicMock(return_value=[])
         pfl.load()
-        pfl.retrieve.assert_not_called()
+        pfl._retrieve.assert_not_called()
         self.assertEqual(5, len(pfl.get_list()))
 
     def test_load2(self):
-        kwargs = dict()
-        kwargs['engine'] = get_engine()
-
         pfl = DBBasedObjectList(
-            prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), **kwargs)
-        pfl.retrieve = MagicMock(return_value=mylist)
+            prefix='realtime/2018-07-21/', execution_date=datetime(2018, 7, 21), engine=get_engine())
+        pfl._retrieve = MagicMock(return_value=mylist.copy())
         pfl.load()
-        pfl.store()
-        pfl.store()
-        pfl.store()
-
-        pfl.load()
+        pfl.update()
+        pfl._retrieve = MagicMock(return_value=mylist.copy())
+        pfl.update()
+        pfl._retrieve = MagicMock(return_value=mylist.copy())
+        pfl.update()
 
         self.assertEqual(5, len(pfl.get_list()))
-        pfl.retrieve.assert_called_once()
+        

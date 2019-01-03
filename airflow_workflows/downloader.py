@@ -19,7 +19,6 @@ def generate_object_list(*args, **kwargs):
     logging.info(f'Will be getting objects for {prefix}')
     pfl = get_file_list(prefix=prefix, **kwargs)
     pfl.update()
-    pfl.store()
 
 
 def download_and_store(**kwargs):
@@ -51,14 +50,14 @@ default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'start_date': datetime(2013, 11, 26),
-    'end_date': datetime(2013, 12, 28),
+    'end_date': datetime(2013, 11, 29),
     'provide_context': True,
     'catchup': True
 }
 
 op_kwargs = {
     #    'prefix-pattern': 'test-realtime-gzip/$date/',
-    'base_dir': '/tmp/'
+    'base_dir': '/tmp/openaq/lists/'
 }
 
 dag = DAG('downloader', default_args=default_args,

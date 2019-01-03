@@ -12,17 +12,29 @@ class ObjectList(object):
         self.prefix = prefix
         self.objects = list()
 
-    def get_date(self):
+    def _get_date(self):
         return self.execution_date
 
-    def retrieve(self):
+    def _retrieve(self):
         objs, _ = get_object_list(bucket_name=FETCHES_BUCKET, prefix=self.prefix)
         return objs
 
     def update(self):
-        self.objects = self.retrieve()
+        obj = self._retrieve().copy()
+        ## do some magic (Key==>Name) with deep copy
+        self.objects.clear()
+        for a in obj:
+            b= a.copy()
+            b['Name'] = b.pop('Key')
+            self.objects.append(b)
+            
+        ## and safe
+        self._store()
 
-    def store(self):
+    def _store(self):
+        pass
+
+    def load(self):
         pass
 
     def get_list(self):
@@ -46,29 +58,33 @@ class FileBasedObjectList(ObjectList):
         self.base_dir = kwargs['base_dir']
 
     def load(self):
+    
         fname = generate_fname(suffix='objects.csv', base_dir=self.base_dir,
                                execution_date=self.execution_date.strftime('%Y-%m-%d'))
 
         if not os.path.isfile(fname):
+            ## to defensive?
             logging.info(f'Old object list { fname } does not exist for some reason. Retrieving')
-            self.objects = self.retrieve()
-        else:
-            with open(fname, 'r') as f:
-                object_reader = csv.DictReader(f, fieldnames=['Name', 'Size', 'ETag', 'LastModified'])
-                for obj in object_reader:
-                    obj['LastModified'] = parser.parse(obj['LastModified'])
-                    obj['Size'] = int(obj['Size'])
-                    self.objects.append(obj)
+            self.update()
+    
+        self.objects.clear()
+    
+        with open(fname, 'r') as f:
+            object_reader = csv.DictReader(f, fieldnames=['Name', 'Size', 'ETag', 'LastModified'])
+            for obj in object_reader:
+                obj['LastModified'] = parser.parse(obj['LastModified'])
+                obj['Size'] = int(obj['Size'])
+                self.objects.append(obj)
 
-    def store(self):
+    def _store(self):
         fname = generate_fname(suffix='objects.csv', base_dir=self.base_dir,
                                execution_date=self.execution_date.strftime('%Y-%m-%d'))
 
-        logging.info('Storing %d objects in %s', len(self.objects), fname)
+        logging.info(f'Storing { len(self.objects)} objects in { fname}',)
 
         with open(fname, 'w+') as f:
             for o in self.objects:
-                f.write(serialize_object(o))
-
+                f.write(','.join([o['Name'], str(o['Size']), o['ETag'], o['LastModified'].isoformat()]) + '\n')
+                
         return fname
 
