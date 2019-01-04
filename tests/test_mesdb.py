@@ -232,5 +232,13 @@ class TestMessDB(unittest.TestCase):
         self.assertEqual(4, self.smdao.count())
         self.assertEqual(6, self.dao.count())
 
+        self.assertEqual(4, self.mdao.count(series_id=1))
+        self.assertEqual(0, self.mdao.count(series_id=838232))
+
+        self.assertEqual(0, self.dao.count(station_id=1212))
+
+
+    
+
 
 

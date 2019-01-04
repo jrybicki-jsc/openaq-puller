@@ -53,7 +53,9 @@ class SeriesDAO(object):
         s = select([timeseries])
         return self.engine.execute(s).fetchall()
 
-    def count(self):
+    def count(self, station_id=None):
         s= select([func.count()]).select_from(timeseries)
+        if station_id is not None:
+            s = s.where(station_id==timeseries.c.station_id)
         res = self.engine.execute(s)
         return res.fetchone()[0]

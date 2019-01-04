@@ -32,7 +32,10 @@ class MeasurementDAO(object):
         res = self.engine.execute(s)
         return res.fetchall()
 
-    def count(self):
+    def count(self, series_id=None):
+        
         s= select([func.count()]).select_from(meseaurement)
+        if series_id is not None:
+            s=s.where(series_id==meseaurement.c.series_id)
         res = self.engine.execute(s)
         return res.fetchone()[0]
