@@ -69,7 +69,7 @@ def get_file_list(prefix, **kwargs):
         logging.info('Using db-based object list')
         fl = DBBasedObjectList(engine=engine, prefix=prefix, **kwargs)
     except:
-        logging.info(f'Using file-based object list for { prefix} ')
+        logging.info(f'Using file-based object list for { prefix }')
         fl = FileBasedObjectList(prefix=prefix, **kwargs)
 
     return fl
@@ -78,7 +78,7 @@ def setup_daos():
     try:
         pg = PostgresHook(postgres_conn_id='openaq-db')    
     except:
-        logging.error('remote database not defined. Use [openaq-db] connection')
+        logging.error('Remote database not defined. Use [openaq-db] connection')
         return None
 
     wrapper = types.SimpleNamespace()
