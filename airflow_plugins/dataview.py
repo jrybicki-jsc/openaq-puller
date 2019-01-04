@@ -51,7 +51,7 @@ class DataView(BaseView):
                     'station_id': station[0],
                     'country': station[6],
                     'state': station[1],
-                    'series': len(series_dao.get_all_for_station(station_id=station[0])),
+                    'series': series_dao.count(station_id=station[0]),
                     'lat': station[3],
                     'lon': station[4]
                 }
@@ -70,7 +70,7 @@ class DataView(BaseView):
                 'parameter': s[2],
                 'unit': s[3],
                 'averagingPeriod': s[4],
-                'count': len(mes_dao.get_all_for_series(series_id=s[0]))
+                'count': mes_dao.count(series_id=s[0])
             })
 
         return ret
@@ -130,7 +130,7 @@ class Tes(BaseModelView):
     ]
 
     column_labels = dict(station_id='Station Name', country='Country', state='State',
-                         series='Series', lat='Latitude', lon='Longitued')  # Rename 'title' column in list view
+                         series='Series', lat='Latitude', lon='Longitude')  # Rename 'title' column in list view
     column_searchable_list = [
         'station_id'
     ]
@@ -155,14 +155,14 @@ class Tes(BaseModelView):
         return model.station_id
 
     def get_list(self, page, sort_field, sort_desc, search, filters, **kwargs):
-        station_dao, _, _ = setup_daos()
+        station_dao, series_dao, _ = setup_daos()
         count = station_dao.count()
         stations = station_dao.get_limited(
             limit=self.page_size, offset=page*self.page_size)
         ret = list()
         for station in stations:
             ret.append(Station(station_id=station[0], country=station[6],
-                               state=station[1], series=0, lat=station[3], lon=station[4]))
+                               state=station[1], series=series_dao.count(station_id=station[0]), lat=station[3], lon=station[4]))
 
         return count, ret
 
