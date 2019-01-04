@@ -89,3 +89,7 @@ class StationMetaCoreDAO(object):
         s= select([func.count()]).select_from(stationmeta)
         res = self.engine.execute(s)
         return res.fetchone()[0]
+
+    def get_limited(self, limit, offset):
+        s = select([stationmeta]).offset(offset).limit(limit)
+        return self.engine.execute(s).fetchall()

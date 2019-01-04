@@ -5,6 +5,8 @@ from models.StationMeta import MyEngine, StationMetaCoreDAO
 from mys3utils.tools import split_record
 import unittest
 
+import logging
+
 jseg = '{"date":{"utc":"2018-06-07T00:00:00.000Z","local":"2018-06-06T20:00:00-04:00"},' \
        '"parameter":"co",' \
        '"location":"La Florida",' \
@@ -57,9 +59,9 @@ class TestModels(unittest.TestCase):
         id2 = self.dao.store_from_json(asj)
         print('{} == {}'.format(id1, id2))
         self.assertIsNotNone(id2)
-
+        logging.info('Getting all')
         result = self.dao.get_all()
-        
+   
         self.assertEqual(1, len(result))
         
 
@@ -100,4 +102,21 @@ class TestModels(unittest.TestCase):
         res = self.dao.get_for_name(station_name="La Florida")
         self.assertIsNotNone(res)
         self.assertEqual(res[0], "La Florida")
+
+    def test_limited(self):
+        res = self.dao.get_limited(limit=20, offset=10)
+        self.assertLess(len(res), 20)
+
+        for i in range(100):
+            self.dao.store(station_id=f'{i}station', station_name=f'name_{i}', station_location='Street', station_latitude=1.2, station_longitude=0.2, station_altitude=0.0,
+              station_country='DE', station_state='NRW')
+
+        res = self.dao.get_limited(limit=20, offset=10)
+        self.assertEqual(len(res), 20)
+        self.assertEqual('10station', res[0][0])
+        
+        res2 = self.dao.get_limited(limit=5, offset=20)
+        self.assertEqual(len(res2), 5)
+        self.assertEqual('20station', res2[0][0])
+
 
