@@ -51,7 +51,7 @@ class ObjectList(object):
         if base_dir is not None:
             m2 = {a[len(base_dir):] for a in m2}
         
-        return m.difference(m2)
+        self.objects = list(m.difference(m2))
 
 
 def generate_fname(suffix, base_dir, execution_date):

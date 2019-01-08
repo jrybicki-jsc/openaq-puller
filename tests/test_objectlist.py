@@ -120,13 +120,8 @@ class TestObjList(unittest.TestCase):
         for i in range(2):
             file_list.append(os.path.join(base_dir,mylist[i]['Key']))
      
-        diff = pfl.substract_list(file_list = file_list, base_dir=base_dir)
-        self.assertIsNotNone(diff)
-        self.assertEqual(3, len(diff))
+        pfl.substract_list(file_list = file_list, base_dir=base_dir)
+        self.assertEqual(3, len(pfl.get_list()))
         
-        
-
-
-
 
 
