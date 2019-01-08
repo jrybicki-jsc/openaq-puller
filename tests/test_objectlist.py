@@ -2,6 +2,7 @@ import shutil
 import unittest
 from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
+import os
 
 from mys3utils.object_list import FileBasedObjectList
 
@@ -108,6 +109,22 @@ class TestObjList(unittest.TestCase):
         self.assertEqual(5, len(p2.get_list()))
         for rec in p2.get_list():
             self.assertIn('Name', rec)
+
+    def test_substract_file_list(self):
+        pfl = FileBasedObjectList(prefix='realtime/2018-07-21/', execution_date=date(2018, 7, 21), base_dir='./tests/')
+        pfl._retrieve = MagicMock(return_value=mylist)
+        pfl.load()
+
+        file_list = list()
+        base_dir = '/mnt/volume/openaq-data/'
+        for i in range(2):
+            file_list.append(os.path.join(base_dir,mylist[i]['Key']))
+     
+        diff = pfl.substract_list(file_list = file_list, base_dir=base_dir)
+        self.assertIsNotNone(diff)
+        self.assertEqual(3, len(diff))
+        
+        
 
 
 

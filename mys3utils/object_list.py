@@ -44,6 +44,15 @@ class ObjectList(object):
     def get_prefix(self):
         return self.prefix
 
+    def substract_list(self, file_list, base_dir=None):
+        
+        m = set((a['Name'] for a in self.objects))
+        m2 = set(file_list)
+        if base_dir is not None:
+            m2 = {a[len(base_dir):] for a in m2}
+        
+        return m.difference(m2)
+
 
 def generate_fname(suffix, base_dir, execution_date):
     fname = os.path.join(base_dir, execution_date)
