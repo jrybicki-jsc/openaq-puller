@@ -1,50 +1,10 @@
-import concurrent.futures
-import logging
-import os
 from datetime import datetime, timedelta
-from string import Template
 
-import boto3
-import botocore
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
-from mys3utils.tools import FETCHES_BUCKET
 
-from localutils import get_file_list, get_prefix_from_template as get_prefix
-
-
-def generate_object_list(*args, **kwargs):
-    prefix = get_prefix(**kwargs)
-    logging.info(f'Will be getting objects for {prefix}')
-    pfl = get_file_list(prefix=prefix, **kwargs)
-    pfl.update()
-
-
-def download_and_store(**kwargs):
-    prefix = get_prefix(**kwargs)
-    target_dir = os.path.join(Variable.get('target_dir'), prefix)
-    os.makedirs(target_dir, exist_ok=True)
-
-    pfl = get_file_list(prefix=prefix, **kwargs)
-    pfl.load()
-    logging.info(f"Downloading {len(pfl.get_list())} objects from {prefix} to {target_dir}")
-
-    client = boto3.client('s3', config=botocore.client.Config(
-        signature_version=botocore.UNSIGNED))
-
-    def myfunc(obj, client=client):
-        if obj['Name'].endswith('/'):
-            return 'skipped'
-        local_name = os.path.join(target_dir, obj['Name'].split('/')[-1])
-        client.download_file(Bucket=FETCHES_BUCKET,
-                             Key=obj['Name'], Filename=local_name)
-        return 'Done'
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for obj, status in zip(pfl.get_list(), executor.map(myfunc, pfl.get_list())):
-            logging.info(f"{ obj['Name']} status: { status }")
-
+from localutils import download_and_store, generate_object_list
 
 default_args = {
     'owner': 'airflow',

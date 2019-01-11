@@ -80,13 +80,9 @@ class DataView(BaseView):
         series = series_dao.get_for_id(series_id=series_id)
 
         meas = mes_dao.get_all_for_series(series_id=series_id, limit=50)
-        ret = list()
-        for m in meas:
-            ret.append({
-                'date': m[2].isoformat(),
-                'value': m[1]
-            })
 
+        ret = [{'date': m[2].isoformat(), 'value': m[1]} for m in meas]
+        
         return ret[::-1], series
 
     def get_rolling_mean(self, data):

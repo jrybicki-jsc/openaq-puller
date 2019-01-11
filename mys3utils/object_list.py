@@ -45,7 +45,6 @@ class ObjectList(object):
         return self.prefix
 
     def substract_list(self, file_list, base_dir=None):
-        
         m = set((a['Name'] for a in self.objects))
         m2 = set(file_list)
         if base_dir is not None:

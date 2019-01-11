@@ -13,6 +13,11 @@ from airflow.models import Variable
 from string import Template
 import types
 
+import boto3
+import botocore
+import glob
+import concurrent.futures
+
 
 def get_prefix_from_template(**kwargs):
     date = kwargs['execution_date']
@@ -97,4 +102,50 @@ def print_db_stats(station_dao, series_dao, mes_dao):
     logging.info(f"{ station_dao.count()} stations stored in db")
     logging.info(f"{ series_dao.count()} series stored in db")
     logging.info(f"{ mes_dao.count()} measurements stored in db")
+
+
+def generate_object_list(*args, **kwargs):
+    prefix = get_prefix_from_template(**kwargs)
+    logging.info(f'Will be getting objects for {prefix}')
+    pfl = get_file_list(prefix=prefix, **kwargs)
+    pfl.update()
+
+    return True
+
+def list_directory(target_dir):
+    mdir=os.path.join(target_dir, '*')
+    return [f for f_ in [glob.glob(f'{mdir}.{ext}') for ext in ('ndjson', 'ndjson.gz')] for f in f_]
+
+
+def download_and_store(**kwargs):
+    prefix = get_prefix_from_template(**kwargs)
+    
+    target_dir = os.path.join(Variable.get('target_dir'), prefix)
+    os.makedirs(target_dir, exist_ok=True)
+    flist = glob.glob(os.path.join(target_dir, '*'))
+    logging.info(f'Files detected in {target_dir}: { len(flist)}')
+
+    pfl = get_file_list(prefix=prefix, **kwargs)
+    pfl.load()
+    tdir = Variable.get('target_dir')
+    pfl.substract_list(file_list=flist, base_dir=tdir)
+
+    logging.info(f'Downloading {len(pfl.get_list())} objects from {prefix} to {target_dir}')
+
+    client = boto3.client('s3', config=botocore.client.Config(
+        signature_version=botocore.UNSIGNED))
+
+    def myfunc(obj, client=client):
+        if obj['Name'].endswith('/'):
+            return 'skipped'
+        local_name = os.path.join(target_dir, obj['Name'].split('/')[-1])
+        client.download_file(Bucket=FETCHES_BUCKET,
+                             Key=obj['Name'], Filename=local_name)
+        return 'Done'
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for obj, status in zip(pfl.get_list(), executor.map(myfunc, pfl.get_list())):
+            logging.info(f"{ obj['Name']} status: { status }")
+
+    return True
     
