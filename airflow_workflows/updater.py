@@ -26,7 +26,7 @@ def update_last(**kwargs):
     previous_run = kwargs['prev_execution_date']
     logging.info(f'Previous run was @{previous_run}')
 
-    #station_dao, series_dao, mes_dao = setup_daos()
+    station_dao, series_dao, mes_dao = setup_daos()
     m = 0
 
     for fname in flist:
@@ -42,19 +42,18 @@ def update_last(**kwargs):
             for record in get_jsons_from_stream(stream=f, object_name=fname):
                 station, measurement, _ = split_record(record)
                 m+=1
-                #logging.info(f'{measurement}')
-                #add_to_db(station_dao,series_dao, mes_dao, station=station,
-                #          measurement=measurement)
+                add_to_db(station_dao,series_dao, mes_dao, station=station,
+                          measurement=measurement)
 
-    logging.info(f'Number of mes {m}')
-    #print_db_stats(station_dao, series_dao, mes_dao)
+    logging.info(f'Number of measurements added to DB: {m}')
+    print_db_stats(station_dao, series_dao, mes_dao)
     return True
 
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2019, 1, 11,8,0,0),
+    'start_date': datetime(2019, 1, 15,8,0,0),
     # 'end_date': datetime(2013, 11, 29),
     'provide_context': True,
     'catchup': True
