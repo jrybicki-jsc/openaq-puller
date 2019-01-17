@@ -1,18 +1,15 @@
+import logging
+import os
 from datetime import datetime, timedelta
 
-import boto3
-import botocore
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
-
-from localutils import list_directory, get_prefix_from_template as get_prefix, add_to_db, setup_daos, print_db_stats, generate_object_list, download_and_store
-
-import logging
-import glob
-import os
-
 from mys3utils.tools import get_jsons_from_stream, split_record
+
+from localutils import add_to_db, download_and_store, generate_object_list
+from localutils import get_prefix_from_template as get_prefix
+from localutils import list_directory, print_db_stats, setup_daos
 
 
 def update_last(**kwargs):
@@ -35,14 +32,14 @@ def update_last(**kwargs):
             logging.info('<< This file is old. Skipping')
             continue
         else:
-            logging.info(f'>> This file is new {datetime.fromtimestamp(os.path.getmtime(fname))}')
-            
+            logging.info(
+                f'>> This file is new {datetime.fromtimestamp(os.path.getmtime(fname))}')
 
         with open(fname, 'rb') as f:
             for record in get_jsons_from_stream(stream=f, object_name=fname):
                 station, measurement, _ = split_record(record)
-                m+=1
-                add_to_db(station_dao,series_dao, mes_dao, station=station,
+                m += 1
+                add_to_db(station_dao, series_dao, mes_dao, station=station,
                           measurement=measurement)
 
     logging.info(f'Number of measurements added to DB: {m}')
@@ -53,7 +50,7 @@ def update_last(**kwargs):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2019, 1, 15,8,0,0),
+    'start_date': datetime(2019, 1, 15, 8, 0, 0),
     # 'end_date': datetime(2013, 11, 29),
     'provide_context': True,
     'catchup': True
@@ -78,8 +75,8 @@ download_task = PythonOperator(task_id='refresh2',
                                dag=dag)
 
 db_task = PythonOperator(task_id='update2',
-                        python_callable=update_last,
-                        op_kwargs=op_kwargs,
-                        dag=dag)
+                         python_callable=update_last,
+                         op_kwargs=op_kwargs,
+                         dag=dag)
 
 get_objects_task >> download_task >> db_task

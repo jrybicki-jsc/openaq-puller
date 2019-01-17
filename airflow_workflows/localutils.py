@@ -1,22 +1,20 @@
-import os
+import concurrent.futures
+import glob
 import logging
-
-from mys3utils.tools import get_jsons_from_object, FETCHES_BUCKET, split_record
-from mys3utils.DBFileList import DBBasedObjectList
-from mys3utils.object_list import FileBasedObjectList
-from airflow.hooks.postgres_hook import PostgresHook
-
-from models.Measurement import MeasurementDAO
-from models.Series import SeriesDAO
-from models.StationMeta import StationMetaCoreDAO
-from airflow.models import Variable
-from string import Template
+import os
 import types
+from string import Template
 
 import boto3
 import botocore
-import glob
-import concurrent.futures
+from airflow.hooks.postgres_hook import PostgresHook
+from airflow.models import Variable
+from models.Measurement import MeasurementDAO
+from models.Series import SeriesDAO
+from models.StationMeta import StationMetaCoreDAO
+from mys3utils.DBFileList import DBBasedObjectList
+from mys3utils.object_list import FileBasedObjectList
+from mys3utils.tools import FETCHES_BUCKET, get_jsons_from_object, split_record
 
 
 def get_prefix_from_template(**kwargs):
@@ -30,12 +28,14 @@ def get_prefix_from_template(**kwargs):
 
     if prefix_pattern.startswith('/'):
         logging.warning('You probably dont want to start prefix with /')
-    
+
     if '$date' not in prefix_pattern:
-        logging.warning('No date placeholder available (use $date). Using pattern as prefix')
+        logging.warning(
+            'No date placeholder available (use $date). Using pattern as prefix')
         return prefix_pattern
-    
+
     return Template(prefix_pattern).substitute(date=date.strftime('%Y-%m-%d')).strip()
+
 
 def generate_fname(suffix, base_dir, execution_date):
     fname = os.path.join(base_dir, execution_date)
@@ -49,13 +49,15 @@ def add_to_db(station_dao, series_dao, mes_dao, station, measurement):
     try:
         stat_id = station_dao.store_from_json(station)
         series_id = series_dao.store(station_id=stat_id,
-                  parameter=measurement['parameter'],
-                  unit=measurement['unit'],
-                  averagingPeriod=f"{ measurement['averagingPeriod']} ")
+                                     parameter=measurement['parameter'],
+                                     unit=measurement['unit'],
+                                     averagingPeriod=f"{ measurement['averagingPeriod']} ")
 
-        mes_dao.store(series_id=series_id, value=measurement['value'], date=measurement['date']['utc'])
+        mes_dao.store(series_id=series_id,
+                      value=measurement['value'], date=measurement['date']['utc'])
     except:
-        logging.warning(f'Problem storing { station } { measurement }. Skipped')
+        logging.warning(
+            f'Problem storing { station } { measurement }. Skipped')
 
 
 def local_process_file(object_name):
@@ -79,11 +81,13 @@ def get_file_list(prefix, **kwargs):
 
     return fl
 
+
 def setup_daos():
     try:
-        pg = PostgresHook(postgres_conn_id='openaq-db')    
+        pg = PostgresHook(postgres_conn_id='openaq-db')
     except:
-        logging.error('Remote database not defined. Use [openaq-db] connection')
+        logging.error(
+            'Remote database not defined. Use [openaq-db] connection')
         return None
 
     wrapper = types.SimpleNamespace()
@@ -97,6 +101,7 @@ def setup_daos():
     mes_dao.create_table()
 
     return station_dao, series_dao, mes_dao
+
 
 def print_db_stats(station_dao, series_dao, mes_dao):
     logging.info(f"{ station_dao.count()} stations stored in db")
@@ -112,14 +117,15 @@ def generate_object_list(*args, **kwargs):
 
     return True
 
+
 def list_directory(target_dir):
-    mdir=os.path.join(target_dir, '*')
+    mdir = os.path.join(target_dir, '*')
     return [f for f_ in [glob.glob(f'{mdir}.{ext}') for ext in ('ndjson', 'ndjson.gz')] for f in f_]
 
 
 def download_and_store(**kwargs):
     prefix = get_prefix_from_template(**kwargs)
-    
+
     target_dir = os.path.join(Variable.get('target_dir'), prefix)
     os.makedirs(target_dir, exist_ok=True)
     flist = glob.glob(os.path.join(target_dir, '*'))
@@ -130,7 +136,8 @@ def download_and_store(**kwargs):
     tdir = Variable.get('target_dir')
     pfl.substract_list(file_list=flist, base_dir=tdir)
 
-    logging.info(f'Downloading {len(pfl.get_list())} objects from {prefix} to {target_dir}')
+    logging.info(
+        f'Downloading {len(pfl.get_list())} objects from {prefix} to {target_dir}')
 
     client = boto3.client('s3', config=botocore.client.Config(
         signature_version=botocore.UNSIGNED))
@@ -148,4 +155,3 @@ def download_and_store(**kwargs):
             logging.info(f"{ obj['Name']} status: { status }")
 
     return True
-    

@@ -1,10 +1,9 @@
 import logging
-import os
 from datetime import timedelta
 
 from airflow import DAG, utils
 from airflow.operators.python_operator import PythonOperator
-from mys3utils.tools import (FETCHES_BUCKET, filter_objects,
+from mys3utils.tools import (FETCHES_BUCKET,
                              get_jsons_from_object, get_object_list,
                              read_object_list, serialize_object, split_record)
 

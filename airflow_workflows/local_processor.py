@@ -1,15 +1,17 @@
 import glob
 import logging
 import os
-from datetime import datetime, timedelta
-from string import Template
+from datetime import datetime
 
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mys3utils.tools import get_jsons_from_stream, split_record
 
-from localutils import get_prefix_from_template as get_prefix, add_to_db, setup_daos, print_db_stats
+from localutils import add_to_db
+from localutils import get_prefix_from_template as get_prefix
+from localutils import print_db_stats, setup_daos
+
 
 def go_through(**kwargs):
     prefix = get_prefix(**kwargs)
@@ -26,11 +28,12 @@ def go_through(**kwargs):
         with open(fname, 'rb') as f:
             for record in get_jsons_from_stream(stream=f, object_name=fname):
                 station, measurement, _ = split_record(record)
-                add_to_db(station_dao,series_dao, mes_dao, station=station,
+                add_to_db(station_dao, series_dao, mes_dao, station=station,
                           measurement=measurement)
 
     print_db_stats(station_dao, series_dao, mes_dao)
     return True
+
 
 default_args = {
     'owner': 'airflow',

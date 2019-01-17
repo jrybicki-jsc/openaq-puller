@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 
 from localutils import download_and_store, generate_object_list
