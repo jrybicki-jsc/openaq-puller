@@ -6,7 +6,7 @@ from sqlalchemy import event
 metadata = MetaData()
 
 stationmeta = Table('stationmetacore', metadata,
-                    Column('station_id', String(64), primary_key=True),
+                    Column('station_id', String(64), primary_key=True, index=True),
                     Column('station_location', String(128)),
                     Column('station_name', String(128)),
                     Column('station_latitude', Float()),
@@ -18,8 +18,8 @@ stationmeta = Table('stationmetacore', metadata,
                     )
 
 timeseries = Table('timeseries', metadata,
-                   Column('id', Integer, Sequence('mes_id_seq'), primary_key=True),
-                   Column('station_id', None, ForeignKey('stationmetacore.station_id')),
+                   Column('id', Integer, Sequence('mes_id_seq'), primary_key=True, index=True),
+                   Column('station_id', None, ForeignKey('stationmetacore.station_id'), index=True),
                    Column('parameter', String(60)),
                    Column('unit', String(60)),
                    Column('averagingPeriod', String(80)),
@@ -27,7 +27,7 @@ timeseries = Table('timeseries', metadata,
                    )
 
 meseaurement = Table('measurement', metadata,
-                     Column('series_id', None, ForeignKey('timeseries.id')),
+                     Column('series_id', None, ForeignKey('timeseries.id'), index=True),
                      Column('value', Float()),
                      Column('date', DateTime),
                      keep_existing=True,
