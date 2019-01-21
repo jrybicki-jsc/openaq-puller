@@ -83,7 +83,7 @@ def filter_file_list(flist, previous_run, next_run):
         ts_parsed = datetime.fromtimestamp(ts)
 
         if (previous_run <= ts_parsed < next_run):
-            ret.append(flist)
+            ret.append(rec)
 
     return ret
 
