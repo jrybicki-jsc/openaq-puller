@@ -41,7 +41,7 @@ class TestLocalUtils(unittest.TestCase):
               '/tmp/target/realtime-gzipped/2019-01-11/1547177466.ndjson.gz', '/tmp/target/realtime-gzipped/2019-01-11/1547199666.ndjson.gz', 
               '/tmp/target/realtime-gzipped/2019-01-11/1547200266.ndjson.gz', '/tmp/target/realtime-gzipped/2019-01-11/1547197266.ndjson.gz', 
               '/tmp/target/realtime-gzipped/2019-01-11/1547181066.ndjson.gz', '/tmp/target/realtime-gzipped/2019-01-11/1547182266.ndjson.gz', 
-              '/tmp/target/realtime-gzipped/2019-01-11/1547190065.ndjson.gz', '/tmp/target/realtime-gzipped/2019-01-11/1547172067.ndjson.gz']
+              '1547190065.ndjson.gz', '/tmp/target/realtime-gzipped/2019-01-11/1547172067.ndjson.gz']
              
         filtered = filter_file_list(flist=fl, previous_run = datetime(2019,1,10), next_run=datetime(2019,1,12))
         self.assertEqual(len(filtered), len(fl))
@@ -52,6 +52,16 @@ class TestLocalUtils(unittest.TestCase):
 
         f3 = filter_file_list(flist=fl, previous_run = datetime(2019,1,9), next_run=datetime(2019,1,10, 9, 50))
         self.assertEqual(0, len(f3))
+
+    def test_filter_nonobjects(self):
+        #'Analyzing /tmp/target/realtime-gzipped/2019-01-17/1547689266.ndjson.gz'
+        fl = ['/tmp/target/realtime-gzipped/2019-01-11/1547187666.cvs', '/tmp/target/realtime-gzipped/2019-01-11/1547195465.txt',
+              '/tmp/target/realtime-gzipped/2019-01-11/myfile.txt', '/tmp/target/realtime-gzipped/2019-01-11/myfile.ndjson.gz', 
+              '1547170266.json.gz', ]
+             
+        filtered = filter_file_list(flist=fl, previous_run = datetime(2019,1,10), next_run=datetime(2019,1,12))
+        self.assertEqual(len(filtered), 0)
+
 
 
 if __name__ == "__main__":

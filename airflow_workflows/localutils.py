@@ -5,6 +5,7 @@ import os
 import types
 from string import Template
 from datetime import datetime
+import re
 
 import boto3
 import botocore
@@ -75,6 +76,9 @@ def filter_file_list(flist, previous_run, next_run):
 
     for rec in flist:
         _, fname = os.path.split(rec)
+        if re.match('(\d+)\.ndjson(\.gz){0,1}', fname) is None:
+            logging.info('Skipping {fname}. Unkown format')
+            continue
         ts = int(fname.split('.')[0])
         ts_parsed = datetime.fromtimestamp(ts)
 
