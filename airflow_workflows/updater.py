@@ -7,7 +7,8 @@ from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mys3utils.tools import get_jsons_from_stream, split_record
 
-from localutils import add_to_db, download_and_store, generate_object_list
+from localutils import (add_to_db, download_and_store, filter_file_list,
+                        generate_object_list)
 from localutils import get_prefix_from_template as get_prefix
 from localutils import list_directory, print_db_stats, setup_daos
 
@@ -21,19 +22,16 @@ def update_last(**kwargs):
     logging.info(f'Files detected: { len(flist)}')
 
     previous_run = kwargs['prev_execution_date']
-    logging.info(f'Previous run was @{previous_run}')
+    next_run = kwargs['next_execution_date']
+    filtered_list = filter_file_list(
+        flist=flist, previous_run=previous_run, next_run=next_run)
+    logging.info(f'Previous run was @{previous_run}, next will be @{next_run}. File list reduced to: {len(filtered_list)}')
 
     station_dao, series_dao, mes_dao = setup_daos()
     m = 0
 
-    for fname in flist:
+    for fname in filtered_list:
         logging.info(f'Analyzing { fname}')
-        if datetime.fromtimestamp(os.path.getmtime(fname)) < previous_run:
-            logging.info('<< This file is old. Skipping')
-            continue
-        else:
-            logging.info(
-                f'>> This file is new {datetime.fromtimestamp(os.path.getmtime(fname))}')
 
         with open(fname, 'rb') as f:
             for record in get_jsons_from_stream(stream=f, object_name=fname):
