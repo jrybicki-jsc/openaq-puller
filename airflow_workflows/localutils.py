@@ -4,6 +4,7 @@ import logging
 import os
 import types
 from string import Template
+from datetime import datetime
 
 import boto3
 import botocore
@@ -66,6 +67,20 @@ def local_process_file(object_name):
         station, measurement, _ = split_record(record)
 
         ret.append([station, measurement])
+    return ret
+
+
+def filter_file_list(flist, previous_run, next_run):
+    ret = list()
+
+    for rec in flist:
+        _, fname = os.path.split(rec)
+        ts = int(fname.split('.')[0])
+        ts_parsed = datetime.fromtimestamp(ts)
+
+        if (previous_run <= ts_parsed < next_run):
+            ret.append(flist)
+
     return ret
 
 
