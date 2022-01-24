@@ -60,7 +60,7 @@ python-nvd3==0.14.2
 python-slugify==1.2.5
 pytz==2018.5
 PyYAML==5.4
-requests==2.19.1
+requests==2.20.0
 s3transfer==0.1.13
 setproctitle==1.1.10
 simplegeneric==0.8.1
